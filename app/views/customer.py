@@ -4,9 +4,11 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from app.views.auth import login_required
 from app.services.customer_service import CustomerService
+from app.services.billing_service import BillingService, PlanLimits
 
 customer_bp = Blueprint('customer', __name__, url_prefix='/customers')
 customer_service = CustomerService()
+billing_service = BillingService()
 
 
 @customer_bp.route('/')
@@ -14,7 +16,18 @@ customer_service = CustomerService()
 def customer_list():
     """顧客一覧"""
     customers = customer_service.get_all_customers()
-    return render_template('customer/list.html', customers=customers)
+    
+    # プラン制限情報を取得
+    plan = session.get('plan', 'basic')
+    customer_limit = PlanLimits.get_customer_limit(plan)
+    current_count = len(customers)
+    
+    return render_template(
+        'customer/list.html',
+        customers=customers,
+        customer_limit=customer_limit,
+        current_count=current_count
+    )
 
 
 @customer_bp.route('/search')
@@ -23,25 +36,55 @@ def search():
     """顧客検索"""
     keyword = request.args.get('keyword', '').strip()
     user_id = session.get('user_id')
+    plan = session.get('plan', 'basic')
 
+    # 検索制限チェック
     if keyword:
+        allowed, message = billing_service.check_search_limit(user_id, plan)
+        if not allowed:
+            flash(message, 'warning')
+            customers = customer_service.get_all_customers()
+            return render_template('customer/list.html', customers=customers, keyword='')
+
+        # 検索カウントをインクリメント
+        billing_service.increment_search_count(user_id)
         customers = customer_service.search_customers(keyword, user_id)
     else:
         customers = customer_service.get_all_customers()
 
-    return render_template('customer/list.html', customers=customers, keyword=keyword)
+    # プラン制限情報を取得
+    customer_limit = PlanLimits.get_customer_limit(plan)
+    current_count = customer_service.get_customer_count()
+
+    return render_template(
+        'customer/list.html',
+        customers=customers,
+        keyword=keyword,
+        customer_limit=customer_limit,
+        current_count=current_count
+    )
 
 
 @customer_bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def create():
     """顧客新規登録"""
+    user_id = session.get('user_id')
+    plan = session.get('plan', 'basic')
+
+    # 登録前に制限チェック
+    current_count = customer_service.get_customer_count()
+    allowed, message = billing_service.check_customer_limit(user_id, plan, current_count)
+
+    if not allowed:
+        flash(message, 'warning')
+        return redirect(url_for('customer.customer_list'))
+
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         address = request.form.get('address', '').strip()
         phone = request.form.get('phone', '').strip()
         email = request.form.get('email', '').strip()
-        user_id = session.get('user_id')
 
         success, message, customer = customer_service.create_customer(
             name=name,

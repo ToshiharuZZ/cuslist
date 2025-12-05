@@ -24,6 +24,16 @@
 <div class="card">
     <div class="table-info">
         <span>全 {{ customers|length }} 件</span>
+        {% if customer_limit %}
+        <span class="limit-info">
+            📊 {{ current_count }} / {{ customer_limit }} 件
+            {% if current_count >= customer_limit %}
+            <span class="badge badge-limit-reached">上限到達</span>
+            {% endif %}
+        </span>
+        {% else %}
+        <span class="limit-info">📊 {{ current_count }} 件（無制限）</span>
+        {% endif %}
         {% if keyword %}
         <span class="search-result">「{{ keyword }}」の検索結果</span>
         {% endif %}
