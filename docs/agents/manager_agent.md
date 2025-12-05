@@ -22,29 +22,51 @@
 
 ## 必須ルール
 
-### � コードレビュールール（必須）
-**各エージェントの作業が完了した際、Manager Agentは必ずコードレビューを実施すること。**
+### 📋 開発ワークフロー（必須）
+**各Phaseは以下のワークフローに従って進行すること。**
 
-1. **レビュー観点**
-   - 要件定義（`specs1.md`, `specs2.md`）との整合性
-   - 詳細設計（`cuslist_detail.md`）との整合性
-   - セキュリティ面のチェック（入力バリデーション、暗号化、アクセス制御等）
-   - コード品質（可読性、再利用性、テストカバレッジ）
+```
+1. Manager Agent → Phase X Agent: 作業指示
+       ↓
+2. Phase X Agent: 実装・テスト実施
+       ↓
+3. Phase X Agent → Reviewer Agent: 実装完了報告
+       ↓
+4. Reviewer Agent: 初回レビュー
+       ↓
+   [問題あり] → CHANGES_REQUESTED → Phase X Agentが修正 → 再レビュー（4へ戻る）
+   [問題なし] → APPROVED
+       ↓
+5. Reviewer Agent → Manager Agent: レビュー完了報告
+       ↓
+6. Manager Agent: 承認・Git反映・タスクチケット更新
+```
 
-2. **問題発見時の対応**
-   - 重要度「高」: その場で修正し、再テストを実施
-   - 重要度「中」「低」: **必ず適切なPhaseのタスクチケット（`docs/tasks/phaseX_*.md`）へ追記**
-   - 追記時には「⚠️ Phase X レビュー指摘」のようにマークを付け、トレーサビリティを確保
-
-3. **レビュー完了後**
-   - レビュー結果をコミットメッセージに含める（例: `Code Review: Phase 2 セキュリティ改善`）
-
-**コードレビューなしでのGit反映は禁止。**
+**Reviewer Agent の APPROVED なしでの Git 反映は禁止。**
 
 ---
 
-### �🔄 Git反映ルール（必須）
-**各エージェントの作業が完了した際、Manager Agentは必ず以下の手順でGitへ反映すること。**
+### 🔍 レビュー委任ルール（必須）
+**コードレビューは Reviewer Agent に委任すること。Manager Agent は直接レビューを実施しない。**
+
+1. **Reviewer Agent の役割**
+   - 要件・設計との整合性チェック
+   - セキュリティチェック
+   - コード品質チェック
+   - 詳細は `docs/agents/reviewer_agent.md` を参照
+
+2. **再レビュープロセス**
+   - 修正完了後は必ず Reviewer Agent による再レビューを実施
+   - APPROVED が出るまでこのサイクルを繰り返す
+
+3. **問題発見時のタスク反映**
+   - 重要度「中」「低」の問題は Reviewer Agent が指摘し、Phase Agent または Manager Agent が適切なタスクチケットへ追記
+   - 追記時には「⚠️ Phase X レビュー指摘」マークを付与
+
+---
+
+### 🔄 Git反映ルール（必須）
+**Reviewer Agent の APPROVED 後、Manager Agentは必ず以下の手順でGitへ反映すること。**
 
 1. **変更のステージング**: `git add -A`
 2. **コミット**: 完了したフェーズと作業内容を明記したコミットメッセージを作成
