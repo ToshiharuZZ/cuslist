@@ -110,9 +110,38 @@ class TestAuthService:
 
     def test_delete_self_not_allowed(self):
         """自分自身を削除できないこと"""
-        self.auth_service.register_user('admin', 'admin123', role=User.ROLE_ADMIN)
+        self.auth_service.register_user('admin', 'admin12345', role=User.ROLE_ADMIN)
 
         success, message = self.auth_service.delete_user('admin', 'admin')
 
         assert success is False
         assert '自分自身を削除' in message
+
+    def test_register_user_id_too_short(self):
+        """利用者IDが短すぎる場合に登録が失敗すること"""
+        success, message = self.auth_service.register_user('ab', 'password123')
+
+        assert success is False
+        assert '3文字以上' in message
+
+    def test_register_password_too_short(self):
+        """パスワードが短すぎる場合に登録が失敗すること"""
+        success, message = self.auth_service.register_user('testuser', 'short')
+
+        assert success is False
+        assert '8文字以上' in message
+
+    def test_register_invalid_user_id_characters(self):
+        """利用者IDに不正な文字が含まれる場合に登録が失敗すること"""
+        success, message = self.auth_service.register_user('test@user!', 'password123')
+
+        assert success is False
+        assert '半角英数字' in message
+
+    def test_register_password_same_as_user_id(self):
+        """パスワードが利用者IDと同じ場合に登録が失敗すること"""
+        success, message = self.auth_service.register_user('testuser', 'testuser')
+
+        assert success is False
+        assert '利用者IDは使用できません' in message
+

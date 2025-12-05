@@ -91,6 +91,11 @@ class AuthService:
         Returns:
             (成功フラグ, メッセージ)
         """
+        # 入力バリデーション
+        validation_error = self._validate_user_input(user_id, password)
+        if validation_error:
+            return False, validation_error
+
         # 重複チェック
         if self.user_repo.exists(user_id):
             return False, "この利用者IDは既に使用されています。"
@@ -188,3 +193,35 @@ class AuthService:
         """ログイン試行回数をリセット"""
         if user_id in self._login_attempts:
             del self._login_attempts[user_id]
+
+    def _validate_user_input(self, user_id: str, password: str) -> Optional[str]:
+        """
+        利用者IDとパスワードのバリデーションを行う。
+
+        Args:
+            user_id: 利用者ID
+            password: パスワード
+
+        Returns:
+            エラーメッセージ（問題がなければNone）
+        """
+        import re
+
+        # 利用者IDのバリデーション
+        if not user_id or len(user_id) < 3:
+            return "利用者IDは3文字以上で入力してください。"
+        if len(user_id) > 50:
+            return "利用者IDは50文字以内で入力してください。"
+        if not re.match(r'^[a-zA-Z0-9_]+$', user_id):
+            return "利用者IDは半角英数字とアンダースコアのみ使用できます。"
+
+        # パスワードのバリデーション
+        if not password or len(password) < 8:
+            return "パスワードは8文字以上で入力してください。"
+        if len(password) > 100:
+            return "パスワードは100文字以内で入力してください。"
+        if password.lower() == user_id.lower():
+            return "パスワードに利用者IDは使用できません。"
+
+        return None
+
