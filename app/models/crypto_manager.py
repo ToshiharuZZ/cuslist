@@ -5,11 +5,8 @@ CryptoManager: 暗号化・復号・ハッシュ化クラス
 import os
 import hashlib
 import secrets
-import base64
 from typing import Optional
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
 
 
 class CryptoManager:

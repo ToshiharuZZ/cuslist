@@ -2,7 +2,6 @@
 Logger: 操作ログ記録クラス
 顧客リスト管理システム - 共通モジュール
 """
-import os
 from datetime import datetime
 from typing import Optional
 from app.models.csv_handler import CsvHandler
