@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}ダッシュボード - 顧客リスト管理システム{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>📊 ダッシュボード</h1>
+    <p class="welcome-message">ようこそ、<strong>{{ session.user_id }}</strong> さん</p>
+
+    <div class="dashboard-cards">
+        <div class="dashboard-card">
+            <div class="dashboard-card-icon">👥</div>
+            <div class="dashboard-card-content">
+                <h3>顧客管理</h3>
+                <p>顧客情報の登録・検索・編集・削除</p>
+                <a href="#" class="btn btn-primary">顧客一覧へ</a>
+            </div>
+        </div>
+
+        {% if session.role == 'admin' %}
+        <div class="dashboard-card">
+            <div class="dashboard-card-icon">🔧</div>
+            <div class="dashboard-card-content">
+                <h3>利用者管理</h3>
+                <p>システム利用者の追加・削除</p>
+                <a href="{{ url_for('auth.user_list') }}" class="btn btn-primary">利用者一覧へ</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="dashboard-card">
+            <div class="dashboard-card-icon">📋</div>
+            <div class="dashboard-card-content">
+                <h3>契約プラン</h3>
+                <p>現在のプラン: <strong>{{ session.plan }}</strong></p>
+                <span class="badge badge-plan">{{ session.plan }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
