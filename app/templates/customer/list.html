@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}顧客一覧 - 顧客リスト管理システム{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>👥 顧客一覧</h1>
+    <a href="{{ url_for('customer.create') }}" class="btn btn-primary">新規登録</a>
+</div>
+
+<div class="card search-card">
+    <form method="GET" action="{{ url_for('customer.search') }}" class="search-form">
+        <div class="search-input-group">
+            <input type="text" name="keyword" value="{{ keyword or '' }}" placeholder="名前、電話番号、住所、メールで検索..."
+                class="search-input">
+            <button type="submit" class="btn btn-primary">🔍 検索</button>
+            {% if keyword %}
+            <a href="{{ url_for('customer.customer_list') }}" class="btn btn-secondary">クリア</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-info">
+        <span>全 {{ customers|length }} 件</span>
+        {% if keyword %}
+        <span class="search-result">「{{ keyword }}」の検索結果</span>
+        {% endif %}
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>顧客ID</th>
+                <th>名前</th>
+                <th>電話番号</th>
+                <th>メールアドレス</th>
+                <th>登録日</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('customer.detail', customer_id=customer.customer_id) }}">
+                        {{ customer.customer_id }}
+                    </a>
+                </td>
+                <td>{{ customer.name }}</td>
+                <td>{{ customer.phone or '-' }}</td>
+                <td>{{ customer.email or '-' }}</td>
+                <td>{{ customer.created_at[:10] if customer.created_at else '-' }}</td>
+                <td class="actions">
+                    <a href="{{ url_for('customer.edit', customer_id=customer.customer_id) }}"
+                        class="btn btn-sm btn-secondary">編集</a>
+                    <form method="POST" action="{{ url_for('customer.delete', customer_id=customer.customer_id) }}"
+                        style="display: inline;" onsubmit="return confirm('本当に削除しますか？');">
+                        <button type="submit" class="btn btn-sm btn-danger">削除</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center">
+                    {% if keyword %}
+                    「{{ keyword }}」に該当する顧客が見つかりません。
+                    {% else %}
+                    顧客が登録されていません。
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

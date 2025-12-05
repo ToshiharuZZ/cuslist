@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}顧客詳細 - {{ customer.name }} - 顧客リスト管理システム{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📋 顧客詳細</h1>
+    <div class="header-actions">
+        <a href="{{ url_for('customer.edit', customer_id=customer.customer_id) }}" class="btn btn-primary">編集</a>
+        <a href="{{ url_for('customer.customer_list') }}" class="btn btn-secondary">一覧に戻る</a>
+    </div>
+</div>
+
+<div class="card detail-card">
+    <div class="detail-header">
+        <span class="customer-id">{{ customer.customer_id }}</span>
+        <h2>{{ customer.name }}</h2>
+    </div>
+
+    <div class="detail-body">
+        <div class="detail-row">
+            <div class="detail-label">住所</div>
+            <div class="detail-value">{{ customer.address or '未登録' }}</div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">電話番号</div>
+            <div class="detail-value">
+                {% if customer.phone %}
+                <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a>
+                {% else %}
+                未登録
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">メールアドレス</div>
+            <div class="detail-value">
+                {% if customer.email %}
+                <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
+                {% else %}
+                未登録
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">登録日時</div>
+            <div class="detail-value">{{ customer.created_at or '-' }}</div>
+        </div>
+    </div>
+
+    <div class="detail-footer">
+        <form method="POST" action="{{ url_for('customer.delete', customer_id=customer.customer_id) }}"
+            onsubmit="return confirm('本当に削除しますか？');">
+            <button type="submit" class="btn btn-danger">この顧客を削除</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
