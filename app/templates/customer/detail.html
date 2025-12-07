@@ -54,6 +54,7 @@
     <div class="detail-footer">
         <form method="POST" action="{{ url_for('customer.delete', customer_id=customer.customer_id) }}"
             onsubmit="return confirm('本当に削除しますか？');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-danger">この顧客を削除</button>
         </form>
     </div>

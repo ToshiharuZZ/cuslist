@@ -10,6 +10,7 @@
 
 <div class="card">
     <form method="POST" action="{{ url_for('auth.register_user') }}" class="form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label for="user_id">利用者ID <span class="required">*</span></label>
             <input type="text" id="user_id" name="user_id" required placeholder="例: user001" maxlength="50">

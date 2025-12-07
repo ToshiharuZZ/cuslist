@@ -67,6 +67,7 @@
                         class="btn btn-sm btn-secondary">編集</a>
                     <form method="POST" action="{{ url_for('customer.delete', customer_id=customer.customer_id) }}"
                         style="display: inline;" onsubmit="return confirm('本当に削除しますか？');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-danger">削除</button>
                     </form>
                 </td>

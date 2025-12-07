@@ -3,10 +3,14 @@ Flaskアプリケーション設定
 """
 import os
 from flask import Flask
+from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 
 # 環境変数を読み込み
 load_dotenv()
+
+# CSRFProtect インスタンス（グローバル）
+csrf = CSRFProtect()
 
 
 def create_app(config_name: str = 'development') -> Flask:
@@ -24,6 +28,10 @@ def create_app(config_name: str = 'development') -> Flask:
     # 基本設定
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
     app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['WTF_CSRF_ENABLED'] = True
+
+    # CSRF保護の初期化
+    csrf.init_app(app)
 
     # ブループリントの登録
     from app.views.auth import auth_bp

@@ -38,6 +38,7 @@
                     {% if user.user_id != session.user_id %}
                     <form method="POST" action="{{ url_for('auth.delete_user', user_id=user.user_id) }}"
                         style="display: inline;" onsubmit="return confirm('本当に削除しますか？');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger btn-sm">削除</button>
                     </form>
                     {% else %}

@@ -9,6 +9,7 @@
         <p class="login-subtitle">顧客リスト管理システムへようこそ</p>
 
         <form method="POST" action="{{ url_for('auth.login') }}" class="login-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="user_id">利用者ID</label>
                 <input type="text" id="user_id" name="user_id" required placeholder="利用者IDを入力" autocomplete="username">
