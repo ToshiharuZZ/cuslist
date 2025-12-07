@@ -110,4 +110,5 @@ cuslist/
 ```
 
 ## 📝 ライセンス
-This project is proprietary.
+このプロジェクトは [MIT License](LICENSE) の下で公開されています。
+
