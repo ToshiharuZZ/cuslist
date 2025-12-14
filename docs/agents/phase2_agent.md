@@ -7,11 +7,14 @@ Phase 2を担当し、利用者（管理者・一般ユーザー）の管理機�
 1.  **認証機能**: ログイン、ログアウト、セッション管理の実装。
 2.  **利用者管理**: 管理者によるユーザー登録・削除機能の実装。
 3.  **アクセス制御**: 権限（admin/user）に基づくアクセス制限の実装。
+4.  **Phase 7対応**: Userモデル拡張（ステータス、解約日等）、解約済みアカウントのログイン制御、データマイグレーション。
 
 ## 参照ドキュメント
 - `docs/tasks/phase2_user_management.md`: 担当タスク
 - `docs/specs1.md`: 利用者管理要件
 - `docs/specs2.md`: 課金プランに関連する利用者属性要件
+- `docs/tasks/phase7_changebilling.md`: Phase 7対応内容（Userモデル拡張）
+- `docs/phase7_impact_analysis.md`: Phase 7影響分析
 
 ## 行動指針
 - Phase 1で作成された `CsvHandler` と `CryptoManager` を正しく利用する。

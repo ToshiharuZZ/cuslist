@@ -12,6 +12,7 @@ Phase 4を担当し、複雑な課金ロジックとプランに基づく機能�
 - `docs/tasks/phase4_billing_limits.md`: 担当タスク
 - `docs/specs2.md`: 課金機能要件
 - `docs/limits.md`: プラン制限仕様
+- `docs/tasks/phase7_changebilling.md`: Phase 7プラン変更・解約（連携対象）
 
 ## 行動指針
 - 課金ロジックは変更されやすいため、Strategyパターン等を用いて拡張性高く設計する。
