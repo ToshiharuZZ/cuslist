@@ -101,12 +101,37 @@ project_root/
 
 ---
 
-## 4. 次のアクション (Next Steps)
+## 4. Git ブランチ戦略（Phase 7以降適用）
 
-1.  **Phase 1（基盤実装）の開始**:
-    *   `CsvHandler` と `CryptoManager` の詳細設計と実装に着手する。
-2.  **不明点の確認**:
-    *   初期管理者アカウントの配布方法。
-    *   バックアップの具体的な運用サイクル（日次？週次？）。
+### 基本方針
+**Phase 7以降、実装作業は専用featureブランチで実施する。**
 
-この計画に基づき、開発プロセスを開始することを推奨する。
+### ブランチ種別
+- **main**: 安定版、本番デプロイ可能な状態
+- **feature/phaseX-description**: 各Phaseの実装作業用
+- **fix/issue-description**: バグ修正用
+- **hotfix/critical-issue**: 緊急修正用
+
+### ワークフロー
+1. **設計フェーズ**: mainブランチでドキュメント作成（リスク低）
+2. **実装フェーズ**: featureブランチで実装・テスト
+3. **レビュー**: Reviewer AgentによるAPPROVED取得
+4. **マージ**: Manager Agentがmainにマージ
+
+### Phase 1-6の扱い
+Phase 1-6は既にmainブランチで完了済み。Phase 7以降、新しいブランチ戦略を適用する。
+
+詳細は `docs/agents/manager_agent.md` の「Git ブランチ戦略」セクションを参照。
+
+---
+
+## 5. 次のアクション (Next Steps)
+
+1.  **Phase 7（プラン変更・解約機能）の実装準備**:
+    *   Phase 2準備作業: `feature/phase2-phase7-preparation` ブランチで実施
+    *   Userモデル拡張、マイグレーション実装
+2.  **Phase 7実装開始**:
+    *   Phase 2準備完了後、`feature/phase7-implementation` ブランチで実施
+
+この計画に基づき、開発プロセスを継続することを推奨する。
+
