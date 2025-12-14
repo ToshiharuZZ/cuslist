@@ -22,9 +22,9 @@
 - 下流工程（Phase 3以降）で問題が発生しないよう、上流工程（Phase 1, 2）の完了条件を厳密にチェックする。
 - エージェント間の依存関係（例: Phase 3はPhase 1の暗号化モジュールに依存する）を解決する。
 - **新機能追加時は、必ずImpact Analysis Agentに影響分析を委任する。**
+- **エージェント割当の最適化**: Impact Analysis Agentの分析に基づき、密結合なタスクは既存エージェントに割り当て、依存関係を最小化する。
 
 ### 📊 プロジェクト状況管理（必須）
-
 **全エージェントは作業完了後、必ずプロジェクト状況一覧を更新すること。**
 
 #### 状況更新ルール
@@ -53,15 +53,16 @@
        ↓
 2. Impact Analysis Agent: 影響分析実施
    - 既存Phase 1-Xへの影響評価
-   - エージェントプロファイル更新
+   - エージェント割当分析（凝集度・結合度チェック）
+   - エージェントプロファイル更新（担当追加 or 新規作成）
    - タスクファイル更新
    - 影響分析レポート作成
        ↓
-3. Impact Analysis Agent → Manager Agent: 分析完了報告
+3. Impact Analysis Agent → Manager Agent: 分析完了報告（担当エージェント提案含む）
        ↓
-4. Manager Agent: 分析結果の確認、アクションプラン承認
+4. Manager Agent: 分析結果と担当エージェントの承認
        ↓
-5. Manager Agent → Phase X Agent: 準備作業指示（必要な場合）
+5. Manager Agent → 担当エージェント（既存or新規）: 準備作業指示
        ↓
 6. 準備作業完了後 → 新機能実装開始（通常ワークフローへ）
 ```
@@ -114,83 +115,29 @@
 
 ---
 
+---
+
 ### 🌿 Git ブランチ戦略（必須）
 **Phase 7以降、実装作業は専用ブランチで実施すること。**
 
 #### ブランチ命名規則
-- **設計・影響分析**: mainブランチで直接作業可能（ドキュメントのみ、実装コードなし）
+- **設計・影響分析**: mainブランチで直接作業可能（ドキュメントのみ）
 - **実装作業**: `feature/phaseX-description`
-  - 例: `feature/phase7-plan-change-implementation`
-  - 例: `feature/phase2-user-model-extension`
 - **バグ修正**: `fix/issue-description`
-  - 例: `fix/login-lockout-issue`
-- **緊急修正**: `hotfix/critical-issue`
 
 #### ブランチ運用ワークフロー
-
-**設計・影響分析フェーズ（mainブランチ）**:
-```
-1. Impact Analysis Agent: 影響分析実施
-2. Manager Agent: 設計書・影響分析レポートをmainに直接コミット
-   - この段階では実装コードなし、ドキュメントのみ
-   - リスクが低いため、ブランチ不要
-```
-
-**実装フェーズ（featureブランチ）**:
-```
-1. Manager Agent: featureブランチ作成
-   git checkout -b feature/phase7-implementation
-
-2. Phase X Agent: ブランチ上で実装・テスト実施
-
-3. Phase X Agent: コミット
-   git add app/
-   git commit -m "Phase 7: プラン変更機能実装"
-
-4. Phase X Agent: リモートにプッシュ
-   git push origin feature/phase7-implementation
-
-5. Phase X Agent → Reviewer Agent: レビュー依頼
-   - GitHub上でプルリクエスト作成（推奨）
-   - またはReviewer Agentに直接レビュー依頼
-
-6. Reviewer Agent: レビュー実施
-   [CHANGES_REQUESTED] → 修正 → 再レビュー
-   [APPROVED] → 次へ
-
-7. Manager Agent: mainにマージ
-   git checkout main
-   git merge feature/phase7-implementation
-   git push origin main
-
-8. Manager Agent: featureブランチ削除（オプション）
-   git branch -d feature/phase7-implementation
-```
+1. **設計フェーズ**: mainブランチ直接（リスク低）
+2. **実装フェーズ**:
+   - `git checkout -b feature/phaseX-impl`
+   - 実装・テスト
+   - `git push`
+   - Reviewer Agent承認
+   - mainへマージ
 
 #### mainブランチの保護
 - **原則**: 実装コードの直接コミットは禁止
-- **例外**: 設計書、影響分析レポート、ドキュメント更新のみ可
+- **例外**: ドキュメント、レポート更新のみ可
 - **必須**: Reviewer AgentのAPPROVED後のみマージ可能
-
-#### Phase 7実装の具体例
-
-**Phase 2準備作業**:
-```bash
-git checkout -b feature/phase2-phase7-preparation
-# Userモデル拡張、マイグレーション実装
-git commit -m "Phase 2: Phase 7対応でUserモデル拡張"
-git push origin feature/phase2-phase7-preparation
-# レビュー → マージ
-```
-
-**Phase 7実装作業**:
-```bash
-git checkout -b feature/phase7-implementation
-# PlanChangeService、CancellationService実装
-git commit -m "Phase 7: プラン変更・解約サービス実装"
-git push origin feature/phase7-implementation
-# レビュー → マージ
-```
 
 ---
 
@@ -198,20 +145,19 @@ git push origin feature/phase7-implementation
 **Reviewer Agent の APPROVED 後、Manager Agentは以下の手順でGitへ反映すること。**
 
 #### 設計書・ドキュメントのみの場合（mainブランチ直接）
-1. **変更のステージング**: `git add docs/`
-2. **コミット**: 設計内容を明記
-   - 例: `Phase 7: プラン変更・解約機能 - 設計書作成と影響分析完了`
-3. **プッシュ**: `git push origin main`
-4. **タスクチケット更新**: 該当する `docs/tasks/phaseX_*.md` のチェックボックスを更新
+1. `git add docs/`
+2. `git commit -m "..."`
+3. `git push origin main`
+4. タスク・ステータス更新
 
 #### 実装コードがある場合（featureブランチ経由）
-1. **ブランチ作成**: `git checkout -b feature/phaseX-description`
-2. **実装後コミット**: `git commit -m "Phase X: 機能実装"`
-3. **リモートプッシュ**: `git push origin feature/phaseX-description`
-4. **レビュー待機**: Reviewer AgentのAPPROVED待ち
-5. **mainにマージ**: `git checkout main && git merge feature/phaseX-description`
-6. **リモート反映**: `git push origin main`
-7. **タスクチケット更新**: チェックボックス更新
+1. `git checkout -b feature/phaseX-...`
+2. 実装・テスト
+3. `git commit` & `git push`
+4. レビュー待ち
+5. `git checkout main` & `git merge`
+6. `git push origin main`
+7. タスク・ステータス更新
 
 **このルールは例外なく適用される。**
 
