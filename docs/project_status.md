@@ -8,28 +8,23 @@
 ## 🎯 全体サマリー
 
 - **完了フェーズ**: Phase 1-8 (8/8完了、全要件達成)
-- **進行中**: なし (プロジェクト完了)
-- **全体進捗**: 100% (T017b 精度 88.4% 達成、プロダクション準備完了)
-- **現在のボトルネック**: なし
+- **進行中**: 開発体制のリファクタリング（フェーズ制 → ドメイン制）、Phase 9 (データベース移行) 影響分析
+- **全体進捗**: 96% (DB移行設計フェーズ開始に伴う調整)
 - **累計テスト結果**: 63テスト全てPASSED
 
 ---
 
 ## 👥 エージェント別状況
 
-| エージェント | 現在のタスク | ステータス | 進捗 | 次のアクション | 最終更新 | 詳細報告書 |
+| エージェント | 担当ドメイン | ステータス | 進捗 | 今後の主な予定 | 最終更新 | 報告書 |
 |-------------|-------------|-----------|------|--------------|---------|-----------|
-| Phase 1 Agent | - | ✅ 完了 | 100% | - | 2025-12-05 | [Phase 1報告書](reports/phase1_report.md) |
-| Phase 2 Agent | Phase 7対応準備 | ✅ 完了 | 100% | - | 2025-12-20 | [Phase 2報告書](reports/phase2_report.md) |
-| Phase 3 Agent | 顧客一括削除実装 | ✅ 完了 | 100% | - | 2025-12-20 | [Phase 3報告書](reports/phase3_report.md) |
-| Phase 4 Agent | - | ✅ 完了 | 100% | Phase 7実装待機 | 2025-12-05 | [Phase 4報告書](reports/phase4_report.md) |
-| Phase 5 Agent | ナビゲーション拡張 | ✅ 完了 | 100% | - | 2025-12-20 | [Phase 5報告書](reports/phase5_report.md) |
-| Phase 6 Agent | Phase 7テスト設計 | ✅ 完了 | 100% | 追加テスト3件済 | 2025-12-20 | [Phase 6報告書](reports/phase6_report.md) |
-| Phase 7 Agent | 本実装完了 | ✅ 完了 | 100% | - | 2025-12-20 | [Phase 7報告書](reports/phase7_report.md) |
-| Phase 8 Agent | UI統合・精度検証 | ✅ 完了 | 100% | 精度88.4%達成 | 2025-12-20 | [Phase 8報告書](reports/phase8_report.md) |
-| Impact Analysis | Phase 7影響分析 | ✅ 完了 | 100% | T017b分析完了 | 2025-12-14 | [Impact Analysis報告書](reports/impact_analysis_report.md) |
-| Reviewer | - | ⏸️ 待機中 | - | レビュー依頼待ち | - | - |
-| Manager | Phase 7本実装指揮 | 🚀 進行中 | - | 進捗監視・承認 | 2025-12-20 | - |
+| **Backend Agent** | 基盤, DB, Auth | 🚀 進行中 | 5% | Phase 9 (DB移行) 設計 | 2025-12-20 | [Backend報告書](reports/backend_report.md) |
+| **Frontend Agent** | UI, UX, Views | ⏸️ 待機中 | 100% | Phase 9 に伴うUI調整 | 2025-12-20 | - |
+| **Analysis Agent** | AI, Data Analysis | ✅ 完了 | 100% | T017b 精度 88.4% 達成済 | 2025-12-20 | [Phase 8報告書](reports/phase8_report.md) |
+| **Security Agent** | 安全, 保護, 監査 | 🚀 進行中 | 5% | DB移行のセキュリティ監査 | 2025-12-20 | [Security報告書](reports/security_report.md) |
+| **QA/Reviewer** | 品質, レビュー | ⏸️ 待機中 | 100% | 全体テストの保守 | 2025-12-20 | - |
+| **Impact Analysis** | 影響分析, 整合性 | 🚀 進行中 | 10% | Phase 9 影響分析実施中 | 2025-12-20 | [分析レポート](reports/analysis_csv_to_db.md) |
+| **Manager** | 進行管理, 指揮 | 🚀 アクティブ | - | ドメイン体制への移行監督 | 2025-12-20 | - |
 
 ---
 
@@ -68,8 +63,6 @@
 | 日付 | 更新者 | 更新内容 |
 |------|--------|---------|
 | 2025-12-14 | Manager Agent | プロジェクト状況一覧を新規作成・復元 |
-| 2025-12-20 | Manager Agent | プロジェクト全フェーズ完了（Phase 1-8）。T017b精度88.4%達成を確認。 |
-| 2025-12-20 | Manager Agent | Phase 7 レビュー指摘事項（残課題）の修正および再テスト完了。最終承認。 |
-| 2025-12-20 | Manager Agent | Phase 7（プラン変更・解約機能）本実装完了。 |
-| 2025-12-20 | Manager Agent | 並行作業（Phase 2, 3, 5, 6）完了、Phase 7本実装開始 |
-| 2025-12-20 | Manager Agent | 並行作業（Phase 2, 3, 5, 6）の指示と進捗反映 |
+| 2025-12-20 | Manager Agent | エージェント体制のリファクタリング（フェーズ制からドメイン制へ統合）。 |
+| 2025-12-20 | Manager Agent | 分析ドメイン：Security Agent を新設。Backend Agent を基盤ドメインにアサイン。 |
+| 2025-12-20 | Manager Agent | プロジェクト全フェーズ完了（Phase 1-8）。T017b精度 88.4% 達成を確認。 |
