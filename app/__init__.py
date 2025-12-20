@@ -44,4 +44,8 @@ def create_app(config_name: str = 'development') -> Flask:
     app.register_blueprint(customer_bp)
     app.register_blueprint(plan_bp, url_prefix='/plan')
 
+    # CLIコマンド登録
+    from app.commands import init_app_commands
+    init_app_commands(app)
+
     return app

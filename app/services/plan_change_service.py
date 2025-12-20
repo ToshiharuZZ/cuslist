@@ -17,6 +17,13 @@ class PlanChangeService:
         'changed_by', 'prorated_amount', 'effective_date', 'created_at'
     ]
 
+    # プラン別価格設定（limits.md準拠）
+    PLAN_PRICES = {
+        User.PLAN_BASIC: 500,
+        User.PLAN_STANDARD: 1500,
+        User.PLAN_PREMIUM: 3000
+    }
+
     def __init__(
         self,
         user_repository: Optional[UserRepository] = None,
@@ -41,21 +48,15 @@ class PlanChangeService:
             if last_date.year == today.year and last_date.month == today.month:
                 return False, "プラン変更は月に1回までです。来月以降に再度お試しください。"
 
-        # 2. ダウングレード時の顧客数チェック (簡易実装)
+        # 2. ダウングレード時の顧客数チェック
         # TODO: 各プランの上限値を取得して比較
         
         return True, ""
 
     def calculate_prorated_amount(self, old_plan: str, new_plan: str) -> float:
-        """日割り計算額を算出（簡易版：固定差額またはロジックプレースホルダ）"""
-        # 実際には specs に基づいた計算を行う
-        plan_prices = {
-            User.PLAN_BASIC: 500,
-            User.PLAN_STANDARD: 1500,
-            User.PLAN_PREMIUM: 3000
-        }
-        old_price = plan_prices.get(old_plan, 0)
-        new_price = plan_prices.get(new_plan, 0)
+        """日割り計算額を算出"""
+        old_price = self.PLAN_PRICES.get(old_plan, 0)
+        new_price = self.PLAN_PRICES.get(new_plan, 0)
         
         if new_price <= old_price:
             return 0.0 # ダウングレード時は返金なし
