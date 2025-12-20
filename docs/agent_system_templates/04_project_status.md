@@ -13,15 +13,16 @@
 
 ---
 
-## 👥 エージェント別状況
+## 👥 ドメイン別状況
 
-| エージェント | 現在のタスク | ステータス | 進捗 | 次のアクション | 最終更新 | 詳細報告書 |
+| エージェント | 担当ドメイン | ステータス | 進捗 | 今後の主な予定 | 最終更新 | 詳細報告書 |
 |-------------|-------------|-----------|------|--------------|---------|-----------|
-| Manager | 全体管理 | 🚀 進行中 | - | - | YYYY-MM-DD | - |
-| Impact Analysis | - | ⏸️ 待機中 | - | - | YYYY-MM-DD | [Report](reports/impact_analysis_report.md) |
-| [Domain Agent A] | [Task Name] | 🚀 進行中 | 50% | 実装中 | YYYY-MM-DD | [Report](reports/agent_a_report.md) |
-| [Domain Agent B] | - | ✅ 完了 | 100% | 待機 | YYYY-MM-DD | [Report](reports/agent_b_report.md) |
-| Reviewer | - | ⏸️ 待機中 | - | レビュー待ち | - | - |
+| Manager | 進行管理 | 🚀 アクティブ | - | - | YYYY-MM-DD | - |
+| Impact Analysis | 整合性分析 | ⏸️ 待機中 | - | - | YYYY-MM-DD | [Report](reports/impact_analysis_report.md) |
+| Backend | 基盤・DB | ⏸️ 待機中 | 0% | - | YYYY-MM-DD | [Report](reports/backend_report.md) |
+| UI/Frontend | 画面・体験 | ⏸️ 待機中 | 0% | - | YYYY-MM-DD | [Report](reports/ui_report.md) |
+| Security | 安全・保護 | ⏸️ 待機中 | 0% | - | YYYY-MM-DD | [Report](reports/security_report.md) |
+| Reviewer | 品質監査 | ⏸️ 待機中 | - | - | - | - |
 
 ---
 
