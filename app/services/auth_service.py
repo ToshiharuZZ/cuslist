@@ -49,6 +49,10 @@ class AuthService:
             self._increment_login_attempts(user_id)
             return False, None, "利用者IDまたはパスワードが正しくありません。"
 
+        # ステータスチェック (Phase 7追加)
+        if user.status == 'cancelled':
+            return False, None, "このアカウントは解約済みです。ログインできません。"
+
         # パスワード検証
         if not CryptoManager.verify_password(password, user.password_hash):
             self._increment_login_attempts(user_id)
