@@ -264,6 +264,40 @@ a {
     transform: translateY(-1px);
 }
 
+.btn-outline {
+    background: transparent;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    box-shadow: none;
+}
+
+.btn-outline:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: var(--primary-dark);
+}
+
+.btn-text {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.btn-text:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.text-danger {
+    color: var(--danger-color) !important;
+}
+
+.card-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
 /* フォーム要素 */
 .form-group {
     margin-bottom: 1.5rem;
