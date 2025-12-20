@@ -52,6 +52,7 @@ def login():
             session['user_id'] = user.user_id
             session['role'] = user.role
             session['plan'] = user.plan
+            session['status'] = user.status  # Phase 7追加
             flash(message, 'success')
             return redirect(url_for('main.dashboard'))
         else:
