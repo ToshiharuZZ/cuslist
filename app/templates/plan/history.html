@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}プラン変更履歴 - 顧客リスト管理システム{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="page-header">
+        <h1>📜 プラン変更履歴</h1>
+        <a href="{{ url_for('plan.change_plan') }}" class="btn btn-primary">プランを変更する</a>
+    </div>
+
+    {% if records %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>日時</th>
+                    <th>種別</th>
+                    <th>変更内容</th>
+                    <th>追加料金</th>
+                    <th>ステータス</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records | reverse %}
+                <tr>
+                    <td>{{ record.created_at[:16].replace('T', ' ') }}</td>
+                    <td>
+                        <span
+                            class="badge {% if record.change_type == 'upgrade' %}badge-plan{% else %}badge-info{% endif %}">
+                            {{ 'アップグレード' if record.change_type == 'upgrade' else 'ダウングレード' }}
+                        </span>
+                    </td>
+                    <td>
+                        <strong>{{ record.old_plan }}</strong> → <strong>{{ record.new_plan }}</strong>
+                        <br>
+                        <small class="text-muted">{{ record.new_billing_type }}</small>
+                    </td>
+                    <td>
+                        {% if record.prorated_amount|float > 0 %}
+                        ¥{{ "{:,.0f}".format(record.prorated_amount|float) }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-success">適用済み</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+        <p>プラン変更の履歴はありません。</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 2rem;">
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">ダッシュボードに戻る</a>
+    </div>
+</div>
+{% endblock %}

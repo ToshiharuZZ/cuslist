@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}契約プラン変更 - 顧客リスト管理システム{% endblock %}
+
+{% block content %}
+<div class="card detail-card">
+    <div class="page-header">
+        <h1>💎 契約プラン変更</h1>
+    </div>
+
+    <form method="POST" action="{{ url_for('plan.change_plan') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+            <label>現在のプラン</label>
+            <div style="padding: 1rem; background: var(--bg-color); border-radius: var(--radius-md); font-weight: 700;">
+                {{ session.plan }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="plan">新しいプランを選択</label>
+            <select name="plan" id="plan" class="form-control" required>
+                <option value="Basic" {% if session.plan=='Basic' %}selected{% endif %}>Basic (¥500/月)</option>
+                <option value="Standard" {% if session.plan=='Standard' %}selected{% endif %}>Standard (¥1,500/月)
+                </option>
+                <option value="Premium" {% if session.plan=='Premium' %}selected{% endif %}>Premium (¥3,000/月)</option>
+            </select>
+            <p class="text-muted" style="font-size: 0.85rem; margin-top: 0.5rem;">
+                ※アップグレードの場合は即座に差額（日割り）が発生します。ダウングレードの場合、返金はございません。
+            </p>
+        </div>
+
+        <div class="form-group">
+            <label for="billing_type">課金方式</label>
+            <select name="billing_type" id="billing_type" class="form-control">
+                <option value="subscription">サブスクリプション型</option>
+                <option value="usage">従量課金型</option>
+                <option value="transaction">トランザクション型</option>
+                <option value="hybrid">ハイブリッド型</option>
+            </select>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">キャンセル</a>
+            <button type="submit" class="btn btn-primary" onclick="return confirm('プランを変更してもよろしいですか？')">変更を確定する</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

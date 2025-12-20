@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}アカウント解約 - 顧客リスト管理システム{% endblock %}
+
+{% block content %}
+<div class="card detail-card" style="border-top: 5px solid var(--danger-color);">
+    <div class="page-header">
+        <h1 style="background: none; -webkit-text-fill-color: initial; color: var(--danger-color);">⚠️ アカウント解約</h1>
+    </div>
+
+    <div class="alert alert-warning">
+        解約手続きを行う前に、以下の注意事項をご確認ください。
+    </div>
+
+    <form method="POST" action="{{ url_for('plan.cancel_account') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+            <label>解約の影響</label>
+            <ul style="margin-left: 1.5rem; color: var(--text-main);">
+                <li>解約手続き完了後、即座にログインできなくなります。</li>
+                <li>データは解約後<strong>30日間</strong>保持されます。期間内であれば再契約（復元）が可能です。</li>
+                <li>30日経過後、全ての顧客データおよび履歴は<strong>完全に削除</strong>され、復元できなくなります。</li>
+            </ul>
+        </div>
+
+        <div class="form-group">
+            <label for="cancellation_type">解約タイミング</label>
+            <select name="cancellation_type" id="cancellation_type" class="form-control">
+                <option value="immediate">即時解約（今すぐ利用を停止する）</option>
+                <option value="end_of_month">月末解約（当月末まで利用する）</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="reason">解約理由（必須）</label>
+            <select name="reason" id="reason" class="form-control" required>
+                <option value="">理由を選択してください</option>
+                <option value="cost">料金が高い</option>
+                <option value="feature">必要な機能が足りない</option>
+                <option value="usability">使いにくい</option>
+                <option value="other">その他</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="comment">詳細な理由（任意）</label>
+            <textarea name="comment" id="comment" rows="4" placeholder="サービス改善のため、よろしければ具体的な理由をお聞かせください。"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">キャンセル</a>
+            <button type="submit" class="btn btn-danger"
+                onclick="return confirm('本当に解約してもよろしいですか？この操作は取り消せません。')">解約を確定する</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

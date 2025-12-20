@@ -37,9 +37,11 @@ def create_app(config_name: str = 'development') -> Flask:
     from app.views.auth import auth_bp
     from app.views.main import main_bp
     from app.views.customer import customer_bp
+    from app.views.plan import plan_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(customer_bp)
+    app.register_blueprint(plan_bp, url_prefix='/plan')
 
     return app

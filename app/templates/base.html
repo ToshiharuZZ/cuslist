@@ -19,8 +19,8 @@
         </div>
         <div class="navbar-menu">
             <a href="{{ url_for('main.dashboard') }}">ダッシュボード</a>
-            <a href="#">プラン変更</a>
-            <a href="#">アカウント解約</a>
+            <a href="{{ url_for('plan.change_plan') }}">プラン変更</a>
+            <a href="{{ url_for('plan.cancel_account') }}">アカウント解約</a>
             {% if session.role == 'admin' %}
             <a href="{{ url_for('auth.user_list') }}">利用者管理</a>
             {% endif %}

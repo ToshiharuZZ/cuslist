@@ -34,9 +34,10 @@
                 <h3>契約プラン</h3>
                 <p>現在のプラン: <strong>{{ session.plan }}</strong></p>
                 <div class="card-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <a href="#" class="btn btn-secondary btn-sm">プラン変更</a>
-                    <a href="#" class="btn btn-outline btn-sm">変更履歴</a>
-                    <a href="#" class="btn btn-text btn-sm text-danger" style="margin-left: auto;">解約はこちら</a>
+                    <a href="{{ url_for('plan.change_plan') }}" class="btn btn-secondary btn-sm">プラン変更</a>
+                    <a href="{{ url_for('plan.history') }}" class="btn btn-outline btn-sm">変更履歴</a>
+                    <a href="{{ url_for('plan.cancel_account') }}" class="btn btn-text btn-sm text-danger"
+                        style="margin-left: auto;">解約はこちら</a>
                 </div>
             </div>
         </div>
