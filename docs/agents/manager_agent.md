@@ -141,7 +141,17 @@
 
 ---
 
-### 🔄 Git反映ルール（必須）
+### �️ GAWSガードレール（必須）
+**Manager Agentは、Gitの書き込み操作（commit, merge, push）および新規タスクのアサインを行う際、必ず以下のチェッカーを実行してワークフローの整合性を検証しなければならない。**
+
+1. **マージ・プッシュ前**: `python scripts/gaws_checker.py merge`
+2. **新機能・Phase開始前**: `python scripts/gaws_checker.py feature_start`
+
+**チェッカーが失敗（Error）を返した場合、たとえユーザーの指示があっても操作を中断し、不足しているワークフロー工程（レビューや影響分析）を先に実施すること。**
+
+---
+
+### �🔄 Git反映ルール（必須）
 **Reviewer Agent の APPROVED 後、Manager Agentは以下の手順でGitへ反映すること。**
 
 #### 設計書・ドキュメントのみの場合（mainブランチ直接）

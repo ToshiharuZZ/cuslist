@@ -69,6 +69,20 @@ class CsvHandler:
                 return record
         return None
 
+    def find_all_by_id(self, id_field: str, id_value: str) -> List[Dict[str, str]]:
+        """
+        指定されたIDに一致するすべてのレコードを検索する。
+
+        Args:
+            id_field: 検索対象のフィールド名
+            id_value: 検索する値
+
+        Returns:
+            一致したレコードのリスト
+        """
+        records = self.read_all()
+        return [r for r in records if r.get(id_field) == id_value]
+
     def add_record(self, record: Dict[str, str]) -> None:
         """
         新しいレコードをCSVファイルに追加する。
