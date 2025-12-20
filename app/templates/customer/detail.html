@@ -51,6 +51,61 @@
         </div>
     </div>
 
+    <div class="card" style="margin-top: 2rem; border-left: 5px solid var(--primary-color);">
+        <div class="detail-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; color: var(--primary-color);">🧠 AI実写データ解析 (T017b)</h3>
+            <form method="POST" action="{{ url_for('customer.run_analysis', customer_id=customer.customer_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline btn-sm">新規解析を実行</button>
+            </form>
+        </div>
+
+        <div class="detail-body">
+            {% if analysis_results %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>実施日</th>
+                            <th>解析精度</th>
+                            <th>主要属性</th>
+                            <th>ステータス</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for res in analysis_results | reverse %}
+                        <tr>
+                            <td>{{ res.analysis_date[:16].replace('T', ' ') }}</td>
+                            <td>
+                                <div class="progress-bar-container"
+                                    style="width: 100px; height: 10px; background: #eee; border-radius: 5px; overflow: hidden;">
+                                    <div
+                                        style="width: {{ res.accuracy_score * 100 }}%; height: 100%; background: {% if res.accuracy_score >= 0.85 %}var(--success-color){% else %}var(--warning-color){% endif %};">
+                                    </div>
+                                </div>
+                                <small>{{ (res.accuracy_score * 100) | round(1) }}%</small>
+                            </td>
+                            <td>
+                                {% set attrs = res._attribute_json | from_json if res._attribute_json else {} %}
+                                <small>
+                                    頻度: {{ attrs.get('visit_frequency', '-') }}<br>
+                                    興味: {{ attrs.get('preferred_category', '-') }}
+                                </small>
+                            </td>
+                            <td><span class="badge badge-success">{{ res.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted" style="text-align: center; padding: 1rem;">
+                解析データがありません。「新規解析を実行」ボタンを押すと実写データの解析を開始します。
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="detail-footer">
         <form method="POST" action="{{ url_for('customer.delete', customer_id=customer.customer_id) }}"
             onsubmit="return confirm('本当に削除しますか？');">

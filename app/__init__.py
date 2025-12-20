@@ -44,6 +44,15 @@ def create_app(config_name: str = 'development') -> Flask:
     app.register_blueprint(customer_bp)
     app.register_blueprint(plan_bp, url_prefix='/plan')
 
+    # カスタムJinja2フィルタ
+    import json
+    @app.template_filter('from_json')
+    def from_json_filter(value):
+        try:
+            return json.loads(value)
+        except (ValueError, TypeError):
+            return {}
+
     # CLIコマンド登録
     from app.commands import init_app_commands
     init_app_commands(app)

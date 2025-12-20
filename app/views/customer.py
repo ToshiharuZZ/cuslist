@@ -5,10 +5,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.views.auth import login_required
 from app.services.customer_service import CustomerService
 from app.services.billing_service import BillingService, PlanLimits
+from app.services.analysis_service import AnalysisService
 
 customer_bp = Blueprint('customer', __name__, url_prefix='/customers')
 customer_service = CustomerService()
 billing_service = BillingService()
+analysis_service = AnalysisService()
 
 
 @customer_bp.route('/')
@@ -114,7 +116,29 @@ def detail(customer_id: str):
         flash('指定された顧客が見つかりません。', 'danger')
         return redirect(url_for('customer.customer_list'))
 
-    return render_template('customer/detail.html', customer=customer)
+    # 解析結果を取得
+    analysis_results = analysis_service.get_results_by_customer(customer_id)
+
+    return render_template('customer/detail.html', customer=customer, analysis_results=analysis_results)
+
+@customer_bp.route('/<customer_id>/run-analysis', methods=['POST'])
+@login_required
+def run_analysis(customer_id: str):
+    """実写データ解析の実行"""
+    user_id = session.get('user_id')
+    # 管理者またはデータ所有者のみ実行可能とする（簡易）
+    customer = customer_service.get_customer(customer_id, user_id)
+    if not customer:
+        flash('権限がありません。', 'danger')
+        return redirect(url_for('customer.customer_list'))
+
+    success, message, result = analysis_service.run_analysis(customer_id)
+    if success:
+        flash(f"{message} (精度: {result.accuracy_score*100:.1f}%)", 'success')
+    else:
+        flash(message, 'danger')
+
+    return redirect(url_for('customer.detail', customer_id=customer_id))
 
 
 @customer_bp.route('/<customer_id>/edit', methods=['GET', 'POST'])
