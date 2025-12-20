@@ -51,6 +51,7 @@ class CustomerService:
         # 顧客作成
         customer = Customer(
             customer_id='',  # 自動採番
+            user_id=user_id, # 所有者設定
             name=name,
             address=address,
             phone=phone,
@@ -200,6 +201,32 @@ class CustomerService:
     def get_customer_count(self) -> int:
         """顧客数を取得する"""
         return self.customer_repo.count()
+
+    def delete_customers_by_user(self, user_id: str) -> int:
+        """
+        指定ユーザーの全顧客データを削除する。
+        解約後のデータ削除（バッチ処理）などで利用される。
+
+        Args:
+            user_id: 削除対象の利用者ID
+
+        Returns:
+            削除された件数
+        """
+        all_customers = self.customer_repo.find_all()
+        target_ids = [c.customer_id for c in all_customers if c.user_id == user_id]
+        
+        count = 0
+        for cid in target_ids:
+            if self.customer_repo.delete(cid):
+                count += 1
+        
+        self.logger.log(
+            "SYSTEM",
+            OperationLogger.OP_CUSTOMER_DELETE,
+            details=f"batch_delete for user={user_id}, count={count}"
+        )
+        return count
 
     def _validate_customer_input(
         self,

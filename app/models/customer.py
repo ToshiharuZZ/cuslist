@@ -17,6 +17,7 @@ class Customer:
     # customers.csv のカラム定義（詳細設計書準拠）
     FIELDNAMES = [
         'customer_id',
+        'user_id',                   # 変更: 所有者ID
         'name_enc',
         'address_enc',
         'phone_enc',
@@ -27,6 +28,7 @@ class Customer:
     def __init__(
         self,
         customer_id: str,
+        user_id: str = '',
         name: str = '',
         address: str = '',
         phone: str = '',
@@ -39,6 +41,7 @@ class Customer:
         email_enc: str = ''
     ):
         self.customer_id = customer_id
+        self.user_id = user_id
         # 平文データ
         self._name = name
         self._address = address
@@ -96,6 +99,7 @@ class Customer:
         """
         return {
             'customer_id': self.customer_id,
+            'user_id': self.user_id,
             'name_enc': crypto.encrypt(self._name),
             'address_enc': crypto.encrypt(self._address),
             'phone_enc': crypto.encrypt(self._phone),
@@ -117,6 +121,7 @@ class Customer:
         """
         return cls(
             customer_id=data.get('customer_id', ''),
+            user_id=data.get('user_id', ''),
             name=crypto.decrypt(data.get('name_enc', '')),
             address=crypto.decrypt(data.get('address_enc', '')),
             phone=crypto.decrypt(data.get('phone_enc', '')),
