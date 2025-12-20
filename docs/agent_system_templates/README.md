@@ -16,6 +16,7 @@
 | `05_report_template.md` | **報告書**。作業完了後の提出フォーマット。 | ⭐️⭐️ |
 | `06_backend_agent.md` | **専門家**。基盤、DB、認証に特化したBackendテンプレート。 | ⭐️ |
 | `07_security_agent.md` | **番人**。監査、保護、脆弱性に特化したSecurityテンプレート。 | ⭐️ |
+| `08_frontend_agent.md` | **専門家**。UI、UX、画面設計に特化したFrontendテンプレート。 | ⭐️ |
 
 ---
 
