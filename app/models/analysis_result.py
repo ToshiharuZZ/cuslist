@@ -3,13 +3,11 @@ AnalysisResult: 解析結果モデル
 """
 from typing import Optional, Dict
 from datetime import datetime
-from app.models.csv_handler import CsvHandler
 from app.models.crypto_manager import CryptoManager
 
 class AnalysisResult:
     """
     実写データ解析結果を表すモデルクラス。
-    analysis_results.csv とマッピングし、機密情報を暗号化して保存する。
     """
 
     FIELDNAMES = [
@@ -40,7 +38,7 @@ class AnalysisResult:
         self._attribute_json_enc = attribute_json_enc
 
     def to_encrypted_dict(self, crypto: CryptoManager) -> Dict[str, str]:
-        """暗号化して辞書形式に変換（CSV保存用）"""
+        """暗号化して辞書形式に変換"""
         return {
             'result_id': self.result_id,
             'customer_id': self.customer_id,
@@ -52,7 +50,7 @@ class AnalysisResult:
 
     @classmethod
     def from_encrypted_dict(cls, data: Dict[str, str], crypto: CryptoManager) -> 'AnalysisResult':
-        """暗号化された辞書からインスタンスを生成（CSV読み込み用）"""
+        """暗号化された辞書からインスタンスを生成"""
         return cls(
             result_id=data.get('result_id', ''),
             customer_id=data.get('customer_id', ''),
@@ -62,3 +60,14 @@ class AnalysisResult:
             status=data.get('status', 'completed'),
             attribute_json_enc=data.get('attribute_json_enc', '')
         )
+
+    def to_dict(self):
+        """プレーンな辞書形式に変換"""
+        return {
+            'result_id': self.result_id,
+            'customer_id': self.customer_id,
+            'analysis_date': self.analysis_date,
+            'accuracy_score': self.accuracy_score,
+            'status': self.status,
+            'attribute_json': self._attribute_json
+        }

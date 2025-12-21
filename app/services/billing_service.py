@@ -4,113 +4,13 @@ BillingService: 課金・制限管理サービス
 """
 from typing import Optional, Dict, Tuple
 from datetime import datetime, date
-from app.models.logger import OperationLogger
-from app.models.csv_handler import CsvHandler
-
-
-class PlanLimits:
-    """
-    プラン別の制限定義。
-    limits.md に準拠。
-    """
-
-    # プラン名の定数
-    PLAN_BASIC = 'basic'
-    PLAN_STANDARD = 'standard'
-    PLAN_PREMIUM = 'premium'
-    PLAN_USAGE = 'usage'           # 従量課金型
-    PLAN_TRANSACTION = 'transaction'  # トランザクション課金型
-    PLAN_HYBRID = 'hybrid'         # ハイブリッド型
-
-    # プラン定義
-    PLANS = {
-        PLAN_BASIC: {
-            'name': 'Basic',
-            'monthly_fee': 500,
-            'customer_limit': 100,
-            'search_limit_daily': 50,
-            'billing_type': 'subscription'
-        },
-        PLAN_STANDARD: {
-            'name': 'Standard',
-            'monthly_fee': 1500,
-            'customer_limit': 1000,
-            'search_limit_daily': 500,
-            'billing_type': 'subscription'
-        },
-        PLAN_PREMIUM: {
-            'name': 'Premium',
-            'monthly_fee': 3000,
-            'customer_limit': None,  # 無制限
-            'search_limit_daily': None,  # 無制限
-            'billing_type': 'subscription'
-        },
-        PLAN_USAGE: {
-            'name': '従量課金',
-            'monthly_fee': 0,
-            'customer_limit': None,
-            'search_limit_daily': None,
-            'billing_type': 'usage',
-            'customer_rate': 200,      # 100件ごと
-            'customer_unit': 100,
-            'search_rate': 100,        # 100回ごと
-            'search_unit': 100
-        },
-        PLAN_TRANSACTION: {
-            'name': 'トランザクション',
-            'monthly_fee': 0,
-            'customer_limit': None,
-            'search_limit_daily': None,
-            'billing_type': 'transaction',
-            'create_fee': 10,
-            'update_fee': 5,
-            'delete_fee': 0,
-            'search_fee': 1
-        },
-        PLAN_HYBRID: {
-            'name': 'ハイブリッド',
-            'monthly_fee': 1000,
-            'customer_limit': 500,
-            'search_limit_daily': 200,
-            'billing_type': 'hybrid',
-            'customer_overage_rate': 500,  # 500件超過ごと
-            'customer_overage_unit': 500,
-            'search_overage_rate': 100,    # 100回ごと
-            'search_overage_unit': 100
-        }
-    }
-
-    @classmethod
-    def get_plan(cls, plan_name: str) -> Optional[Dict]:
-        """プラン情報を取得する"""
-        return cls.PLANS.get(plan_name.lower())
-
-    @classmethod
-    def get_customer_limit(cls, plan_name: str) -> Optional[int]:
-        """顧客登録件数上限を取得する（Noneは無制限）"""
-        plan = cls.get_plan(plan_name)
-        if plan:
-            return plan.get('customer_limit')
-        return 100  # デフォルトはBasic相当
-
-    @classmethod
-    def get_daily_search_limit(cls, plan_name: str) -> Optional[int]:
-        """1日あたりの検索回数上限を取得する（Noneは無制限）"""
-        plan = cls.get_plan(plan_name)
-        if plan:
-            return plan.get('search_limit_daily')
-        return 50  # デフォルトはBasic相当
-
-    @classmethod
-    def is_subscription(cls, plan_name: str) -> bool:
-        """サブスクリプション型かどうか"""
-        plan = cls.get_plan(plan_name)
-        return plan and plan.get('billing_type') == 'subscription'
+from app import db
+from app.models.db_models import Billing as BillingDB, OperationLog as OperationLogDB
 
 
 class BillingService:
     """
-    課金・制限管理サービス。
+    課金・制限管理サービス (SQLAlchemy版)。
     プラン制限チェック、課金計算を担当。
     """
 
@@ -129,10 +29,9 @@ class BillingService:
     def __init__(
         self,
         logger: Optional[OperationLogger] = None,
-        billing_csv_path: str = 'data/billing.csv'
+        **kwargs
     ):
         self.logger = logger or OperationLogger()
-        self.billing_csv = CsvHandler(billing_csv_path, self.BILLING_FIELDNAMES)
         # 検索回数カウント用（メモリ内管理）
         self._daily_search_counts: Dict[str, Dict[str, int]] = {}
 
@@ -144,14 +43,6 @@ class BillingService:
     ) -> Tuple[bool, str]:
         """
         顧客登録件数制限をチェックする。
-
-        Args:
-            user_id: 利用者ID
-            plan: プラン名
-            current_count: 現在の顧客登録件数
-
-        Returns:
-            (制限内かどうか, メッセージ)
         """
         limit = PlanLimits.get_customer_limit(plan)
 
@@ -171,13 +62,6 @@ class BillingService:
     ) -> Tuple[bool, str]:
         """
         検索回数制限をチェックする。
-
-        Args:
-            user_id: 利用者ID
-            plan: プラン名
-
-        Returns:
-            (制限内かどうか, メッセージ)
         """
         limit = PlanLimits.get_daily_search_limit(plan)
 
@@ -196,12 +80,6 @@ class BillingService:
     def increment_search_count(self, user_id: str) -> int:
         """
         検索回数をインクリメントする。
-
-        Args:
-            user_id: 利用者ID
-
-        Returns:
-            更新後のカウント
         """
         today = date.today().isoformat()
         if today not in self._daily_search_counts:
@@ -225,14 +103,6 @@ class BillingService:
     ) -> Dict:
         """
         月額請求を計算する。
-
-        Args:
-            user_id: 利用者ID
-            plan: プラン名
-            billing_period: 請求期間（YYYY-MM形式）
-
-        Returns:
-            請求明細の辞書
         """
         plan_info = PlanLimits.get_plan(plan)
         if not plan_info:
@@ -338,34 +208,38 @@ class BillingService:
     def save_billing_record(self, billing_data: Dict) -> str:
         """
         請求データを保存する。
-
-        Args:
-            billing_data: 請求データ
-
-        Returns:
-            請求ID
         """
-        billing_id = self.billing_csv.generate_next_id('billing_id', 'BILL')
+        # ID採番
+        last_billing = BillingDB.query.order_by(BillingDB.billing_id.desc()).first()
+        if last_billing:
+            try:
+                last_num = int(last_billing.billing_id[4:])
+                billing_id = f"BILL{last_num + 1:04d}"
+            except (ValueError, IndexError):
+                billing_id = f"BILL{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        else:
+            billing_id = "BILL0001"
 
-        record = {
-            'billing_id': billing_id,
-            'user_id': billing_data['user_id'],
-            'billing_period': billing_data['billing_period'],
-            'plan': billing_data['plan'],
-            'base_fee': str(billing_data['base_fee']),
-            'usage_fee': str(billing_data['usage_fee']),
-            'total_fee': str(billing_data['total_fee']),
-            'details': '; '.join(billing_data.get('details', [])),
-            'created_at': datetime.now().isoformat()
-        }
+        record = BillingDB(
+            billing_id=billing_id,
+            user_id=billing_data['user_id'],
+            billing_period=billing_data['billing_period'],
+            plan=billing_data['plan'],
+            base_fee=float(billing_data['base_fee']),
+            usage_fee=float(billing_data['usage_fee']),
+            total_fee=float(billing_data['total_fee']),
+            details='; '.join(billing_data.get('details', [])),
+            created_at=datetime.now().isoformat()
+        )
 
-        self.billing_csv.add_record(record)
+        db.session.add(record)
+        db.session.commit()
         return billing_id
 
     def get_billing_history(self, user_id: str) -> list:
         """利用者の請求履歴を取得する"""
-        all_records = self.billing_csv.read_all()
-        return [r for r in all_records if r.get('user_id') == user_id]
+        records = BillingDB.query.filter_by(user_id=user_id).all()
+        return [r.to_dict() for r in records]
 
     def _count_operations_in_period(
         self,
@@ -375,26 +249,12 @@ class BillingService:
     ) -> int:
         """
         指定期間内の操作回数をカウントする。
-
-        Args:
-            user_id: 利用者ID
-            operation: 操作種別
-            period: 期間（YYYY-MM形式）
-
-        Returns:
-            操作回数
         """
-        all_logs = self.logger.csv_handler.read_all()
-        count = 0
-        for log in all_logs:
-            if log.get('user_id') != user_id:
-                continue
-            if log.get('operation') != operation:
-                continue
-            created_at = log.get('created_at', '')
-            if created_at.startswith(period):
-                count += 1
-        return count
+        return OperationLogDB.query.filter(
+            OperationLogDB.user_id == user_id,
+            OperationLogDB.operation == operation,
+            OperationLogDB.created_at.like(f"{period}%")
+        ).count()
 
 
 def limit_check_required(check_type: str):

@@ -4,12 +4,13 @@ Logger: 操作ログ記録クラス
 """
 from datetime import datetime
 from typing import Optional
-from app.models.csv_handler import CsvHandler
+from app import db
+from app.models.db_models import OperationLog as OperationLogDB
 
 
 class OperationLogger:
     """
-    利用者の操作ログを記録するクラス。
+    利用者の操作ログを記録するクラス (SQLAlchemy版)。
     課金計算の根拠となるため、確実なログ保存が求められる。
     """
 
@@ -33,14 +34,9 @@ class OperationLogger:
     OP_USER_CREATE = 'user_create'
     OP_USER_DELETE = 'user_delete'
 
-    def __init__(self, log_file_path: str = 'data/logs.csv'):
-        """
-        OperationLoggerを初期化する。
-
-        Args:
-            log_file_path: ログファイルのパス
-        """
-        self.csv_handler = CsvHandler(log_file_path, self.LOG_FIELDNAMES)
+    def __init__(self, **kwargs):
+        # 互換性のために引数は受け取るが使用しない
+        pass
 
     def log(
         self,
@@ -51,98 +47,60 @@ class OperationLogger:
     ) -> str:
         """
         操作ログを記録する。
-
-        Args:
-            user_id: 操作を行った利用者ID
-            operation: 操作種別（OP_* 定数を使用）
-            target_id: 操作対象のID（顧客ID等）
-            details: 追加の詳細情報
-
-        Returns:
-            記録されたログID
         """
-        log_id = self.csv_handler.generate_next_id('log_id', 'LOG')
-        timestamp = datetime.now().isoformat()
+        # ID採番 (LOGxxxx)
+        last_log = OperationLogDB.query.order_by(OperationLogDB.log_id.desc()).first()
+        if last_log:
+            try:
+                last_num = int(last_log.log_id[3:])
+                log_id = f"LOG{last_num + 1:04d}"
+            except (ValueError, IndexError):
+                log_id = f"LOG{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        else:
+            log_id = "LOG0001"
 
-        record = {
-            'log_id': log_id,
-            'user_id': user_id,
-            'operation': operation,
-            'target_id': target_id or '',
-            'details': details or '',
-            'created_at': timestamp
-        }
+        record = OperationLogDB(
+            log_id=log_id,
+            user_id=user_id,
+            operation=operation,
+            target_id=target_id or '',
+            details=details or '',
+            created_at=datetime.now().isoformat()
+        )
 
-        self.csv_handler.add_record(record)
+        db.session.add(record)
+        db.session.commit()
         return log_id
 
     def get_logs_by_user(self, user_id: str) -> list:
         """
         指定した利用者のログを取得する。
-
-        Args:
-            user_id: 利用者ID
-
-        Returns:
-            ログレコードのリスト
         """
-        all_logs = self.csv_handler.read_all()
-        return [log for log in all_logs if log.get('user_id') == user_id]
+        records = OperationLogDB.query.filter_by(user_id=user_id).all()
+        return [r.to_dict() for r in records]
 
     def get_logs_by_operation(self, operation: str) -> list:
         """
         指定した操作種別のログを取得する。
-
-        Args:
-            operation: 操作種別
-
-        Returns:
-            ログレコードのリスト
         """
-        all_logs = self.csv_handler.read_all()
-        return [log for log in all_logs if log.get('operation') == operation]
+        records = OperationLogDB.query.filter_by(operation=operation).all()
+        return [r.to_dict() for r in records]
 
     def get_logs_by_date_range(self, start_date: str, end_date: str) -> list:
         """
         指定した日付範囲のログを取得する。
-
-        Args:
-            start_date: 開始日（ISO8601形式）
-            end_date: 終了日（ISO8601形式）
-
-        Returns:
-            ログレコードのリスト
         """
-        all_logs = self.csv_handler.read_all()
-        filtered = []
-        for log in all_logs:
-            created_at = log.get('created_at', '')
-            if start_date <= created_at <= end_date:
-                filtered.append(log)
-        return filtered
+        records = OperationLogDB.query.filter(
+            OperationLogDB.created_at >= start_date,
+            OperationLogDB.created_at <= end_date
+        ).all()
+        return [r.to_dict() for r in records]
 
     def count_operations(self, user_id: str, operation: str, date: Optional[str] = None) -> int:
         """
         特定の利用者の操作回数をカウントする（課金計算用）。
-
-        Args:
-            user_id: 利用者ID
-            operation: 操作種別
-            date: 対象日（YYYY-MM-DD形式、Noneの場合は全期間）
-
-        Returns:
-            操作回数
         """
-        all_logs = self.csv_handler.read_all()
-        count = 0
-        for log in all_logs:
-            if log.get('user_id') != user_id:
-                continue
-            if log.get('operation') != operation:
-                continue
-            if date:
-                log_date = log.get('created_at', '')[:10]  # YYYY-MM-DD部分を取得
-                if log_date != date:
-                    continue
-            count += 1
-        return count
+        query = OperationLogDB.query.filter_by(user_id=user_id, operation=operation)
+        if date:
+            query = query.filter(OperationLogDB.created_at.like(f"{date}%"))
+        return query.count()
