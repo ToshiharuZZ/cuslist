@@ -79,9 +79,9 @@
        ↓
 2. Phase X Agent: 実装・テスト実施
        ↓
-3. Phase X Agent → Reviewer Agent: 実装完了報告
+3. Phase X Agent → Reviewer Agent: 実装完了報告（レビュー依頼）
        ↓
-4. Reviewer Agent: 初回レビュー
+4. Reviewer Agent: レビュー実施
        ↓
    [問題あり] → CHANGES_REQUESTED → Phase X Agentが修正 → 再レビュー（4へ戻る）
    [問題なし] → APPROVED
@@ -91,8 +91,7 @@
 6. Manager Agent: 承認・Git反映・タスクチケット更新
 ```
 
-**Reviewer Agent の APPROVED なしでの Git 反映は禁止。**
-
+**Reviewer Agent の APPROVED なしでの Git 反映・環境適用は禁止。**
 
 ---
 
@@ -109,65 +108,42 @@
    - 修正完了後は必ず Reviewer Agent による再レビューを実施
    - APPROVED が出るまでこのサイクルを繰り返す
 
-3. **問題発見時のタスク反映**
-   - 重要度「中」「低」の問題は Reviewer Agent が指摘し、Phase Agent または Manager Agent が適切なタスクチケットへ追記
-   - 追記時には「⚠️ Phase X レビュー指摘」マークを付与
-
----
-
 ---
 
 ### 🌿 Git ブランチ戦略（必須）
-**Phase 7以降、実装作業は専用ブランチで実施すること。**
+**実装作業は専用ブランチで実施すること。**
 
 #### ブランチ命名規則
 - **設計・影響分析**: mainブランチで直接作業可能（ドキュメントのみ）
 - **実装作業**: `feature/phaseX-description`
 - **バグ修正**: `fix/issue-description`
 
-#### ブランチ運用ワークフロー
-1. **設計フェーズ**: mainブランチ直接（リスク低）
-2. **実装フェーズ**:
-   - `git checkout -b feature/phaseX-impl`
-   - 実装・テスト
-   - `git push`
-   - Reviewer Agent承認
-   - mainへマージ
+---
 
-#### mainブランチの保護
-- **原則**: 実装コードの直接コミットは禁止
-- **例外**: ドキュメント、レポート更新のみ可
-- **必須**: Reviewer AgentのAPPROVED後のみマージ可能
+### 🚨 再発防止：実装・適用ガードレール（厳守）
+**Manager Agentは、いかなる変更であっても、以下の順序を無視して `run_command` による環境操作や `write_to_file` による実装を完了させてはならない。**
+
+1. **実装前宣言**: 作業前に「何」を実装するかユーザーに宣言する。
+2. **レビュー依頼**: 実装内容（下書きコード）を Reviewer Agent に提示する。
+3. **APPROVED の確認**: `docs/reports/` に承認記録が残るまで、実装を確定（実実行）させない。
+4. **セルフチェック**: 作業終了時、`python scripts/gaws_checker.py merge` を実行し、承認漏れを確認する。
 
 ---
 
-### �️ GAWSガードレール（必須）
-**Manager Agentは、Gitの書き込み操作（commit, merge, push）および新規タスクのアサインを行う際、必ず以下のチェッカーを実行してワークフローの整合性を検証しなければならない。**
+### GAWSガードレール（必須）
+**Manager Agentは、Gitの書き込み操作および新規タスクのアサインを行う際、必ず以下のチェッカーを実行して整合性を検証しなければならない。**
 
 1. **マージ・プッシュ前**: `python scripts/gaws_checker.py merge`
 2. **新機能・Phase開始前**: `python scripts/gaws_checker.py feature_start`
 
-**チェッカーが失敗（Error）を返した場合、たとえユーザーの指示があっても操作を中断し、不足しているワークフロー工程（レビューや影響分析）を先に実施すること。**
+**チェッカーが失敗した場合、たとえユーザーの指示があっても操作を中断し、不足している工程を先に実施すること。**
 
 ---
 
-### �🔄 Git反映ルール（必須）
-**Reviewer Agent の APPROVED 後、Manager Agentは以下の手順でGitへ反映すること。**
+### Git反映ルール（必須）
+**Reviewer Agent の APPROVED 後、Manager Agentは以下の手順で反映すること。**
 
-#### 設計書・ドキュメントのみの場合（mainブランチ直接）
-1. `git add docs/`
-2. `git commit -m "..."`
-3. `git push origin main`
-4. タスク・ステータス更新
-
-#### 実装コードがある場合（featureブランチ経由）
-1. `git checkout -b feature/phaseX-...`
-2. 実装・テスト
-3. `git commit` & `git push`
-4. レビュー待ち
-5. `git checkout main` & `git merge`
-6. `git push origin main`
-7. タスク・ステータス更新
-
-**このルールは例外なく適用される。**
+1. `git add` & `git commit`
+2. `git merge` (または push)
+3. タスク・ステータス更新
 
