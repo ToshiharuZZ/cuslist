@@ -1,0 +1,1 @@
+cancellation_id,user_id,cancellation_type,cancellation_reason,cancellation_comment,cancelled_by,is_forced,plan_at_cancellation,requested_date,effective_date,data_retention_until,created_at

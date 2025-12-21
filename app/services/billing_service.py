@@ -6,6 +6,107 @@ from typing import Optional, Dict, Tuple
 from datetime import datetime, date
 from app import db
 from app.models.db_models import Billing as BillingDB, OperationLog as OperationLogDB
+from app.models.logger import OperationLogger
+
+
+class PlanLimits:
+    """
+    プラン別の制限定義。
+    limits.md に準拠。
+    """
+
+    # プラン名の定数
+    PLAN_BASIC = 'basic'
+    PLAN_STANDARD = 'standard'
+    PLAN_PREMIUM = 'premium'
+    PLAN_USAGE = 'usage'           # 従量課金型
+    PLAN_TRANSACTION = 'transaction'  # トランザクション課金型
+    PLAN_HYBRID = 'hybrid'         # ハイブリッド型
+
+    # プラン定義
+    PLANS = {
+        PLAN_BASIC: {
+            'name': 'Basic',
+            'monthly_fee': 500,
+            'customer_limit': 100,
+            'search_limit_daily': 50,
+            'billing_type': 'subscription'
+        },
+        PLAN_STANDARD: {
+            'name': 'Standard',
+            'monthly_fee': 1500,
+            'customer_limit': 1000,
+            'search_limit_daily': 500,
+            'billing_type': 'subscription'
+        },
+        PLAN_PREMIUM: {
+            'name': 'Premium',
+            'monthly_fee': 3000,
+            'customer_limit': None,  # 無制限
+            'search_limit_daily': None,  # 無制限
+            'billing_type': 'subscription'
+        },
+        PLAN_USAGE: {
+            'name': '従量課金',
+            'monthly_fee': 0,
+            'customer_limit': None,
+            'search_limit_daily': None,
+            'billing_type': 'usage',
+            'customer_rate': 200,      # 100件ごと
+            'customer_unit': 100,
+            'search_rate': 100,        # 100回ごと
+            'search_unit': 100
+        },
+        PLAN_TRANSACTION: {
+            'name': 'トランザクション',
+            'monthly_fee': 0,
+            'customer_limit': None,
+            'search_limit_daily': None,
+            'billing_type': 'transaction',
+            'create_fee': 10,
+            'update_fee': 5,
+            'delete_fee': 0,
+            'search_fee': 1
+        },
+        PLAN_HYBRID: {
+            'name': 'ハイブリッド',
+            'monthly_fee': 1000,
+            'customer_limit': 500,
+            'search_limit_daily': 200,
+            'billing_type': 'hybrid',
+            'customer_overage_rate': 500,  # 500件超過ごと
+            'customer_overage_unit': 500,
+            'search_overage_rate': 100,    # 100回ごと
+            'search_overage_unit': 100
+        }
+    }
+
+    @classmethod
+    def get_plan(cls, plan_name: str) -> Optional[Dict]:
+        """プラン情報を取得する"""
+        return cls.PLANS.get(plan_name.lower())
+
+    @classmethod
+    def get_customer_limit(cls, plan_name: str) -> Optional[int]:
+        """顧客登録件数上限を取得する（Noneは無制限）"""
+        plan = cls.get_plan(plan_name)
+        if plan:
+            return plan.get('customer_limit')
+        return 100  # デフォルトはBasic相当
+
+    @classmethod
+    def get_daily_search_limit(cls, plan_name: str) -> Optional[int]:
+        """1日あたりの検索回数上限を取得する（Noneは無制限）"""
+        plan = cls.get_plan(plan_name)
+        if plan:
+            return plan.get('search_limit_daily')
+        return 50  # デフォルトはBasic相当
+
+    @classmethod
+    def is_subscription(cls, plan_name: str) -> bool:
+        """サブスクリプション型かどうか"""
+        plan = cls.get_plan(plan_name)
+        return plan and plan.get('billing_type') == 'subscription'
 
 
 class BillingService:

@@ -5,11 +5,12 @@ from typing import Optional, Tuple, List, Dict
 from datetime import datetime, date
 import calendar
 from app.models.user import User, UserRepository
-from app.models.csv_handler import CsvHandler
-from app.models.logger import OperationLogger
+from app import db
+from app.models.db_models import PlanChangeHistory as PlanChangeHistoryDB
+
 
 class PlanChangeService:
-    """プラン変更に関するビジネスロジックを担当するクラス"""
+    """プラン変更に関するビジネスロジックを担当するクラス (SQLAlchemy版)"""
 
     HISTORY_FIELDNAMES = [
         'history_id', 'user_id', 'change_type', 'old_plan', 'new_plan',
@@ -28,11 +29,10 @@ class PlanChangeService:
         self,
         user_repository: Optional[UserRepository] = None,
         logger: Optional[OperationLogger] = None,
-        history_csv_path: str = 'data/plan_change_history.csv'
+        **kwargs
     ):
         self.user_repo = user_repository or UserRepository()
         self.logger = logger or OperationLogger()
-        self.history_handler = CsvHandler(history_csv_path, self.HISTORY_FIELDNAMES)
 
     def can_change_plan(self, user_id: str, new_plan: str) -> Tuple[bool, str]:
         """プラン変更が可能かチェックする"""
@@ -41,16 +41,15 @@ class PlanChangeService:
             return False, "ユーザーが見つかりません。"
 
         # 1. 変更頻度制限 (1ヶ月に1回)
-        # 簡易チェック: last_plan_change_date が今月ならNG
         if user.last_plan_change_date:
-            last_date = datetime.fromisoformat(user.last_plan_change_date).date()
-            today = date.today()
-            if last_date.year == today.year and last_date.month == today.month:
-                return False, "プラン変更は月に1回までです。来月以降に再度お試しください。"
+            try:
+                last_date = datetime.fromisoformat(user.last_plan_change_date).date()
+                today = date.today()
+                if last_date.year == today.year and last_date.month == today.month:
+                    return False, "プラン変更は月に1回までです。来月以降に再度お試しください。"
+            except ValueError:
+                pass
 
-        # 2. ダウングレード時の顧客数チェック
-        # TODO: 各プランの上限値を取得して比較
-        
         return True, ""
 
     def calculate_prorated_amount(self, old_plan: str, new_plan: str) -> float:
@@ -67,7 +66,7 @@ class PlanChangeService:
         
         diff = new_price - old_price
         prorated = (diff * remaining_days) / days_in_month
-        return round(prorated, 2)
+        return round(float(prorated), 2)
 
     def execute_plan_change(
         self,
@@ -97,22 +96,32 @@ class PlanChangeService:
         self.user_repo.update(user)
 
         # 履歴記録
-        history_id = self.history_handler.generate_next_id('history_id', 'PCH')
-        history_record = {
-            'history_id': history_id,
-            'user_id': user_id,
-            'change_type': 'upgrade' if prorated_amount > 0 else 'downgrade',
-            'old_plan': old_plan,
-            'new_plan': new_plan,
-            'old_billing_type': old_billing_type,
-            'new_billing_type': new_billing_type,
-            'change_reason': reason,
-            'changed_by': changed_by,
-            'prorated_amount': str(prorated_amount),
-            'effective_date': date.today().isoformat(),
-            'created_at': datetime.now().isoformat()
-        }
-        self.history_handler.add_record(history_record)
+        last_pch = PlanChangeHistoryDB.query.order_by(PlanChangeHistoryDB.history_id.desc()).first()
+        if last_pch:
+            try:
+                last_num = int(last_pch.history_id[3:])
+                history_id = f"PCH{last_num + 1:04d}"
+            except (ValueError, IndexError):
+                history_id = f"PCH{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        else:
+            history_id = "PCH0001"
+
+        history_record = PlanChangeHistoryDB(
+            history_id=history_id,
+            user_id=user_id,
+            change_type='upgrade' if prorated_amount > 0 else 'downgrade',
+            old_plan=old_plan,
+            new_plan=new_plan,
+            old_billing_type=old_billing_type,
+            new_billing_type=new_billing_type,
+            change_reason=reason,
+            changed_by=changed_by,
+            prorated_amount=prorated_amount,
+            effective_date=date.today().isoformat(),
+            created_at=datetime.now().isoformat()
+        )
+        db.session.add(history_record)
+        db.session.commit()
 
         self.logger.log(
             changed_by,

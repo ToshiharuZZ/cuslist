@@ -70,9 +70,43 @@ class OperationLog(db.Model):
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
-# 他のモデルにも同様に to_dict を追加するか、BaseModel を作るのが良いが、
-# 今回はシンプルに UserDB や CustomerDB にも追加する。
+class PlanChangeHistory(db.Model):
+    __tablename__ = 'plan_change_histories'
+    history_id = db.Column(db.String(50), primary_key=True)
+    user_id = db.Column(db.String(50), db.ForeignKey('users.user_id'), nullable=False)
+    change_type = db.Column(db.String(20))
+    old_plan = db.Column(db.String(20))
+    new_plan = db.Column(db.String(20))
+    old_billing_type = db.Column(db.String(20))
+    new_billing_type = db.Column(db.String(20))
+    change_reason = db.Column(db.Text)
+    changed_by = db.Column(db.String(50))
+    prorated_amount = db.Column(db.Float, default=0.0)
+    effective_date = db.Column(db.String(50))
+    created_at = db.Column(db.String(50), default=lambda: datetime.now().isoformat())
 
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+class CancellationHistory(db.Model):
+    __tablename__ = 'cancellation_histories'
+    cancellation_id = db.Column(db.String(50), primary_key=True)
+    user_id = db.Column(db.String(50), db.ForeignKey('users.user_id'), nullable=False)
+    cancellation_type = db.Column(db.String(20))
+    cancellation_reason = db.Column(db.Text)
+    cancellation_comment = db.Column(db.Text)
+    cancelled_by = db.Column(db.String(50))
+    is_forced = db.Column(db.Boolean, default=False)
+    plan_at_cancellation = db.Column(db.String(20))
+    requested_date = db.Column(db.String(50))
+    effective_date = db.Column(db.String(50))
+    data_retention_until = db.Column(db.String(50))
+    created_at = db.Column(db.String(50), default=lambda: datetime.now().isoformat())
+
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+# 他のモデルにも同様に to_dict を追加
 User.to_dict = lambda self: {c.name: getattr(self, c.name) for c in self.__table__.columns}
 Customer.to_dict = lambda self: {c.name: getattr(self, c.name) for c in self.__table__.columns}
 AnalysisResult.to_dict = lambda self: {c.name: getattr(self, c.name) for c in self.__table__.columns}

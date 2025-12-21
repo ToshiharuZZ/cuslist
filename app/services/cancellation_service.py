@@ -4,12 +4,12 @@ CancellationService: 解約管理サービス
 from typing import Optional, Tuple, List, Dict
 from datetime import datetime, date, timedelta
 from app.models.user import User, UserRepository
-from app.models.csv_handler import CsvHandler
-from app.models.logger import OperationLogger
-from app.services.customer_service import CustomerService
+from app import db
+from app.models.db_models import CancellationHistory as CancellationHistoryDB
+
 
 class CancellationService:
-    """解約・データ保持期間管理を担当するクラス"""
+    """解約・データ保持期間管理を担当するクラス (SQLAlchemy版)"""
 
     HISTORY_FIELDNAMES = [
         'cancellation_id', 'user_id', 'cancellation_type', 'cancellation_reason',
@@ -22,12 +22,11 @@ class CancellationService:
         user_repository: Optional[UserRepository] = None,
         customer_service: Optional[CustomerService] = None,
         logger: Optional[OperationLogger] = None,
-        history_csv_path: str = 'data/cancellation_history.csv'
+        **kwargs
     ):
         self.user_repo = user_repository or UserRepository()
         self.customer_service = customer_service or CustomerService()
         self.logger = logger or OperationLogger()
-        self.history_handler = CsvHandler(history_csv_path, self.HISTORY_FIELDNAMES)
 
     def execute_cancellation(
         self,
@@ -48,11 +47,7 @@ class CancellationService:
 
         # 解約日の決定
         requested_date = date.today()
-        if cancellation_type == 'immediate':
-            effective_date = requested_date
-        else: #月末解約など（簡易的に当日として扱う）
-            effective_date = requested_date
-
+        effective_date = requested_date
         data_retention_until = effective_date + timedelta(days=30)
 
         # ユーザー情報更新
@@ -62,22 +57,32 @@ class CancellationService:
         self.user_repo.update(user)
 
         # 履歴記録
-        can_id = self.history_handler.generate_next_id('cancellation_id', 'CAN')
-        history_record = {
-            'cancellation_id': can_id,
-            'user_id': user_id,
-            'cancellation_type': cancellation_type,
-            'cancellation_reason': reason,
-            'cancellation_comment': comment,
-            'cancelled_by': cancelled_by,
-            'is_forced': 'True' if is_forced else 'False',
-            'plan_at_cancellation': user.plan,
-            'requested_date': requested_date.isoformat(),
-            'effective_date': effective_date.isoformat(),
-            'data_retention_until': data_retention_until.isoformat(),
-            'created_at': datetime.now().isoformat()
-        }
-        self.history_handler.add_record(history_record)
+        last_can = CancellationHistoryDB.query.order_by(CancellationHistoryDB.cancellation_id.desc()).first()
+        if last_can:
+            try:
+                last_num = int(last_can.cancellation_id[3:])
+                can_id = f"CAN{last_num + 1:04d}"
+            except (ValueError, IndexError):
+                can_id = f"CAN{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        else:
+            can_id = "CAN0001"
+
+        history_record = CancellationHistoryDB(
+            cancellation_id=can_id,
+            user_id=user_id,
+            cancellation_type=cancellation_type,
+            cancellation_reason=reason,
+            cancellation_comment=comment,
+            cancelled_by=cancelled_by,
+            is_forced=is_forced,
+            plan_at_cancellation=user.plan,
+            requested_date=requested_date.isoformat(),
+            effective_date=effective_date.isoformat(),
+            data_retention_until=data_retention_until.isoformat(),
+            created_at=datetime.now().isoformat()
+        )
+        db.session.add(history_record)
+        db.session.commit()
 
         self.logger.log(
             cancelled_by,

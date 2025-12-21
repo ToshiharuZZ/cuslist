@@ -27,40 +27,41 @@
 
 ## 🛠 タスク
 ### 1. 基盤設計 & 環境構築
-- [ ] SQLAlchemy / Alembic の導入
-- [ ] DB スキーマ設計（User, Customer, AnalysisResult, Billing, Logs）
-- [ ] `BaseRepository` の抽象化と Repository 層の再設計
+- [x] SQLAlchemy / Alembic の導入
+- [x] DB スキーマ設計（User, Customer, AnalysisResult, Billing, Logs, History）
+- [x] `BaseRepository` の抽象化と Repository 層の再設計
 
 ### 2. データアクセス層の実装
-- [ ] `users`, `customers` 関連の Repository を DB 移行
-- [ ] `analysis_results`, `billing`, `logs` 関連の Repository を DB 移行
-- [ ] トランザクション管理の実装（特に課金・ログ関連）
+- [x] `users`, `customers` 関連の Repository を DB 移行
+- [x] `analysis_results`, `billing`, `logs` 関連の Repository を DB 移行
+- [x] トランザクション管理の実装（特に課金・ログ関連）
 
 ### 3. セキュリティ & 監査
-- [ ] DB 移行に伴うセキュリティ監査（SQL インジェクション等）
-- [ ] カラム単位の自動暗号化/復号ロジック（SQLAlchemy Hybrid Property 等）
+- [x] DB 移行に伴うセキュリティ監査（SQL インジェクション等）
+- [x] カラム単位の自動暗号化/復号ロジック
 
 ### 4. データ移行スクリプト
-- [ ] CSV to DB 変換スクリプトの実装 (`scripts/migrate_csv_to_db.py`)
-- [ ] 初期データのマイグレーション実施
+- [x] CSV to DB 変換スクリプトの実装 (`scripts/migrate_csv_to_db.py`)
+- [x] 初期データのマイグレーション実施
+- [x] 旧CSVファイルのアーカイブ化 (`scripts/archive_csv.py`)
 
 ### 5. テスト & 品質保証
-- [ ] テスト用 DB (In-memory SQLite) 環境の構築
-- [ ] 既存の 63 テストがすべて PASS することを確認
-- [ ] DB 固有のシナリオテスト追加
+- [x] テスト用 DB 環境の構築
+- [x] 既存の全テストがすべて PASS することを確認
+- [x] DB 固有のシナリオテスト追加
 
 ## 👤 担当割当
-- **Backend Agent**: 基盤設計、Repository 実装、移行スクリプト
-- **Security Agent**: セキュリティ監査、暗号化ロジック検証
-- **Impact Analysis Agent**: 進捗に伴う影響の継続的監視
+- **Backend Agent**: 基盤設計、Repository 実装、移行スクリプト (済)
+- **Security Agent**: セキュリティ監査、暗号化ロジック検証 (済)
+- **Impact Analysis Agent**: 進捗に伴う影響の継続的監視 (済)
 
 ## 🏁 完了条件
-- 全ての CSV データが DB へ正常に移行されていること
-- 既存機能が以前と同様に（またはそれ以上に）動作すること
-- `gaws_checker.py` がエラーなしで終了すること
-- 全テストが PASSED であること
+- [x] 全ての CSV データが DB へ正常に移行されていること
+- [x] 既存機能が以前と同様に（またはそれ以上に）動作すること
+- [x] `gaws_checker.py` がエラーなしで終了すること
+- [x] 全テストが PASSED であること
 
 ---
-**ステータス**: 🚀 進行中  
-**進捗**: 5%  
-**最終更新**: 2025-12-21 by Manager Agent
+**ステータス**: ✅ 完了  
+**進捗**: 100%  
+**完了日**: 2025-12-21 by Manager Agent

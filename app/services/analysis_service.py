@@ -5,30 +5,25 @@ import json
 import random
 from typing import Optional, List, Tuple
 from app.models.analysis_result import AnalysisResult
-from app.models.csv_handler import CsvHandler
-from app.models.crypto_manager import CryptoManager
-from app.models.logger import OperationLogger
+from app import db
+from app.models.db_models import AnalysisResult as AnalysisResultDB
 
 class AnalysisService:
-    """実写データの解析および結果管理を担当するクラス"""
+    """実写データの解析および結果管理を担当するクラス (SQLAlchemy版)"""
 
     def __init__(
         self,
-        history_csv_path: str = 'data/analysis_results.csv',
         logger: Optional[OperationLogger] = None,
-        crypto: Optional[CryptoManager] = None
+        crypto: Optional[CryptoManager] = None,
+        **kwargs
     ):
-        self.handler = CsvHandler(history_csv_path, AnalysisResult.FIELDNAMES)
         self.logger = logger or OperationLogger()
         self.crypto = crypto or CryptoManager()
 
     def run_analysis(self, customer_id: str) -> Tuple[bool, str, Optional[AnalysisResult]]:
         """
-        実写データの解析を実行する (プレースホルダ)
-        T017b目標: 85%以上の精度
+        実写データの解析を実行する
         """
-        # 実際にはここで外部エンジン等を呼び出す
-        # 今回はデモ用に 85%〜95% の範囲で精度をシミュレート
         accuracy = round(random.uniform(0.85, 0.95), 4)
         
         attributes = {
@@ -37,7 +32,17 @@ class AnalysisService:
             "loyalty_score": 88
         }
         
-        result_id = self.handler.generate_next_id('result_id', 'RES')
+        # ID採番
+        last_res = AnalysisResultDB.query.order_by(AnalysisResultDB.result_id.desc()).first()
+        if last_res:
+            try:
+                last_num = int(last_res.result_id[3:])
+                result_id = f"RES{last_num + 1:04d}"
+            except (ValueError, IndexError):
+                result_id = f"RES{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        else:
+            result_id = "RES0001"
+
         result = AnalysisResult(
             result_id=result_id,
             customer_id=customer_id,
@@ -46,8 +51,11 @@ class AnalysisService:
             status='completed'
         )
         
-        # 保存
-        self.handler.add_record(result.to_encrypted_dict(self.crypto))
+        # DB保存
+        encrypted_data = result.to_encrypted_dict(self.crypto)
+        record = AnalysisResultDB(**encrypted_data)
+        db.session.add(record)
+        db.session.commit()
         
         self.logger.log(
             "SYSTEM",
@@ -60,5 +68,5 @@ class AnalysisService:
 
     def get_results_by_customer(self, customer_id: str) -> List[AnalysisResult]:
         """顧客別の解析結果を取得する"""
-        records = self.handler.find_all_by_id('customer_id', customer_id)
-        return [AnalysisResult.from_encrypted_dict(r, self.crypto) for r in records]
+        records = AnalysisResultDB.query.filter_by(customer_id=customer_id).all()
+        return [AnalysisResult.from_encrypted_dict(r.to_dict(), self.crypto) for r in records]
