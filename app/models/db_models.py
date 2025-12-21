@@ -66,3 +66,14 @@ class OperationLog(db.Model):
     target_id = db.Column(db.String(50))
     details = db.Column(db.Text)
     created_at = db.Column(db.String(50), default=lambda: datetime.now().isoformat())
+
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+# 他のモデルにも同様に to_dict を追加するか、BaseModel を作るのが良いが、
+# 今回はシンプルに UserDB や CustomerDB にも追加する。
+
+User.to_dict = lambda self: {c.name: getattr(self, c.name) for c in self.__table__.columns}
+Customer.to_dict = lambda self: {c.name: getattr(self, c.name) for c in self.__table__.columns}
+AnalysisResult.to_dict = lambda self: {c.name: getattr(self, c.name) for c in self.__table__.columns}
+Billing.to_dict = lambda self: {c.name: getattr(self, c.name) for c in self.__table__.columns}

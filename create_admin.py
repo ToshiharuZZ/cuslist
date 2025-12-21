@@ -14,39 +14,39 @@ from app.models.user import User, UserRepository
 from app.models.crypto_manager import CryptoManager
 
 
+from app import create_app, db
+
 def create_admin_user(user_id: str = 'admin', password: str = 'admin123'):
     """
     初期管理者アカウントを作成する。
-
-    Args:
-        user_id: 管理者ID（デフォルト: admin）
-        password: パスワード（デフォルト: admin123）
     """
-    repo = UserRepository()
+    app = create_app()
+    with app.app_context():
+        repo = UserRepository()
 
-    # 既存チェック
-    if repo.exists(user_id):
-        print(f"管理者 '{user_id}' は既に存在します。")
-        return False
+        # 既存チェック
+        if repo.exists(user_id):
+            print(f"管理者 '{user_id}' は既に存在します。")
+            return False
 
-    # パスワードハッシュ化
-    password_hash = CryptoManager.create_password_hash(password)
+        # パスワードハッシュ化
+        password_hash = CryptoManager.create_password_hash(password)
 
-    # 管理者ユーザー作成
-    admin = User(
-        user_id=user_id,
-        password_hash=password_hash,
-        role=User.ROLE_ADMIN,
-        plan=User.PLAN_PREMIUM,
-        billing_type=User.BILLING_SUBSCRIPTION
-    )
+        # 管理者ユーザー作成
+        admin = User(
+            user_id=user_id,
+            password_hash=password_hash,
+            role=User.ROLE_ADMIN,
+            plan=User.PLAN_PREMIUM,
+            billing_type=User.BILLING_SUBSCRIPTION
+        )
 
-    repo.save(admin)
-    print(f"✅ 管理者アカウントを作成しました。")
-    print(f"   利用者ID: {user_id}")
-    print(f"   パスワード: {password}")
-    print(f"   ⚠️  ログイン後にパスワードを変更してください。")
-    return True
+        repo.save(admin)
+        print(f"✅ 管理者アカウントを作成しました。")
+        print(f"   利用者ID: {user_id}")
+        print(f"   パスワード: {password}")
+        print(f"   ⚠️  ログイン後にパスワードを変更してください。")
+        return True
 
 
 if __name__ == '__main__':

@@ -113,84 +113,80 @@ class User:
         return self.role == self.ROLE_ADMIN
 
 
+from app import db
+from app.models.db_models import User as UserDB
+
+
 class UserRepository:
     """
-    利用者データへのアクセスを管理するリポジトリクラス。
+    利用者データへのアクセスを管理するリポジトリクラス (SQLAlchemy版)。
     """
 
-    def __init__(self, csv_path: str = 'data/users.csv'):
-        self.csv_handler = CsvHandler(csv_path, User.FIELDNAMES)
+    def __init__(self, **kwargs):
+        # 互換性のために引数は受け取るが使用しない
+        pass
 
     def find_by_id(self, user_id: str) -> Optional[User]:
         """
         利用者IDで検索する。
-
-        Args:
-            user_id: 検索する利用者ID
-
-        Returns:
-            見つかったUserオブジェクト、または None
         """
-        record = self.csv_handler.find_by_id('user_id', user_id)
+        record = db.session.get(UserDB, user_id)
         if record:
-            return User.from_dict(record)
+            return User.from_dict(record.to_dict())
         return None
 
     def find_all(self) -> List[User]:
         """
         全利用者を取得する。
-
-        Returns:
-            Userオブジェクトのリスト
         """
-        records = self.csv_handler.read_all()
-        return [User.from_dict(record) for record in records]
+        records = UserDB.query.all()
+        return [User.from_dict(r.to_dict()) for r in records]
 
     def save(self, user: User) -> None:
         """
-        利用者を保存する（新規追加）。
-
-        Args:
-            user: 保存するUserオブジェクト
+        利用者を保存する。
         """
-        self.csv_handler.add_record(user.to_dict())
+        # すでに存在する場合はエラーを防ぐためチェック
+        if self.find_by_id(user.user_id):
+            self.update(user)
+            return
+
+        record = UserDB(**user.to_dict())
+        db.session.add(record)
+        db.session.commit()
 
     def update(self, user: User) -> bool:
         """
         利用者情報を更新する。
-
-        Args:
-            user: 更新するUserオブジェクト
-
-        Returns:
-            更新成功時True
         """
-        return self.csv_handler.update_record('user_id', user.user_id, user.to_dict())
+        record = db.session.get(UserDB, user.user_id)
+        if record:
+            # フィールドを更新
+            data = user.to_dict()
+            for key, value in data.items():
+                if hasattr(record, key):
+                    setattr(record, key, value)
+            db.session.commit()
+            return True
+        return False
 
     def delete(self, user_id: str) -> bool:
         """
         利用者を削除する。
-
-        Args:
-            user_id: 削除する利用者ID
-
-        Returns:
-            削除成功時True
         """
-        return self.csv_handler.delete_record('user_id', user_id)
+        record = db.session.get(UserDB, user_id)
+        if record:
+            db.session.delete(record)
+            db.session.commit()
+            return True
+        return False
 
     def exists(self, user_id: str) -> bool:
         """
         利用者が存在するかチェックする。
-
-        Args:
-            user_id: チェックする利用者ID
-
-        Returns:
-            存在する場合True
         """
-        return self.find_by_id(user_id) is not None
+        return db.session.get(UserDB, user_id) is not None
 
     def count(self) -> int:
         """利用者数を返す"""
-        return self.csv_handler.count()
+        return UserDB.query.count()

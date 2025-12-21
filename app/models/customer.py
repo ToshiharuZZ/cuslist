@@ -145,97 +145,86 @@ class Customer:
         }
 
 
+from app import db
+from app.models.db_models import Customer as CustomerDB
+
+
 class CustomerRepository:
     """
-    顧客データへのアクセスを管理するリポジトリクラス。
+    顧客データへのアクセスを管理するリポジトリクラス (SQLAlchemy版)。
     暗号化・復号処理を内包する。
     """
 
-    def __init__(
-        self,
-        csv_path: str = 'data/customers.csv',
-        crypto: Optional[CryptoManager] = None
-    ):
-        self.csv_handler = CsvHandler(csv_path, Customer.FIELDNAMES)
+    def __init__(self, crypto: Optional[CryptoManager] = None, **kwargs):
         self.crypto = crypto or CryptoManager()
 
     def find_by_id(self, customer_id: str) -> Optional[Customer]:
         """
         顧客IDで検索する。
-
-        Args:
-            customer_id: 検索する顧客ID
-
-        Returns:
-            見つかったCustomerオブジェクト、または None
         """
-        record = self.csv_handler.find_by_id('customer_id', customer_id)
+        record = db.session.get(CustomerDB, customer_id)
         if record:
-            return Customer.from_encrypted_dict(record, self.crypto)
+            return Customer.from_encrypted_dict(record.to_dict(), self.crypto)
         return None
 
     def find_all(self) -> List[Customer]:
         """
         全顧客を取得する（復号済み）。
-
-        Returns:
-            Customerオブジェクトのリスト
         """
-        records = self.csv_handler.read_all()
-        return [Customer.from_encrypted_dict(record, self.crypto) for record in records]
+        records = CustomerDB.query.all()
+        return [Customer.from_encrypted_dict(r.to_dict(), self.crypto) for r in records]
 
     def save(self, customer: Customer) -> str:
         """
         顧客を保存する（新規追加）。
-
-        Args:
-            customer: 保存するCustomerオブジェクト
-
-        Returns:
-            採番された顧客ID
         """
-        # IDが未設定の場合は自動採番
+        # IDが未設定の場合は自動採番（DBの連番機能等も検討可能だが、一旦現状の仕様を維持）
         if not customer.customer_id:
-            customer.customer_id = self.csv_handler.generate_next_id('customer_id', 'CUS')
+            # 簡略化のためにラストID+1を取得するロジックが必要だが、
+            # SQLAlchemyモデルで自動採番するようにしていないため、
+            # 以前の CSV 用ロジック（または代替）が必要
+            last_record = CustomerDB.query.order_by(CustomerDB.customer_id.desc()).first()
+            if last_record:
+                last_num = int(last_record.customer_id[3:]) # 'CUS001' -> 1
+                customer.customer_id = f"CUS{last_num + 1:03d}"
+            else:
+                customer.customer_id = "CUS001"
 
         encrypted_data = customer.to_encrypted_dict(self.crypto)
-        self.csv_handler.add_record(encrypted_data)
+        record = CustomerDB(**encrypted_data)
+        db.session.add(record)
+        db.session.commit()
         return customer.customer_id
 
     def update(self, customer: Customer) -> bool:
         """
         顧客情報を更新する。
-
-        Args:
-            customer: 更新するCustomerオブジェクト
-
-        Returns:
-            更新成功時True
         """
-        encrypted_data = customer.to_encrypted_dict(self.crypto)
-        return self.csv_handler.update_record('customer_id', customer.customer_id, encrypted_data)
+        record = db.session.get(CustomerDB, customer.customer_id)
+        if record:
+            encrypted_data = customer.to_encrypted_dict(self.crypto)
+            for key, value in encrypted_data.items():
+                if hasattr(record, key):
+                    setattr(record, key, value)
+            db.session.commit()
+            return True
+        return False
 
     def delete(self, customer_id: str) -> bool:
         """
         顧客を削除する。
-
-        Args:
-            customer_id: 削除する顧客ID
-
-        Returns:
-            削除成功時True
         """
-        return self.csv_handler.delete_record('customer_id', customer_id)
+        record = db.session.get(CustomerDB, customer_id)
+        if record:
+            db.session.delete(record)
+            db.session.commit()
+            return True
+        return False
 
     def search(self, keyword: str) -> List[Customer]:
         """
-        キーワードで顧客を検索する（メモリ内検索）。
-
-        Args:
-            keyword: 検索キーワード（名前、電話番号、メールアドレスで検索）
-
-        Returns:
-            マッチしたCustomerオブジェクトのリスト
+        キーワードで顧客を検索する（メモリ内検索 または DB検索）。
+        暗号化されているため、現状通り全件取得してメモリで検索する。
         """
         all_customers = self.find_all()
         if not keyword:
@@ -253,8 +242,8 @@ class CustomerRepository:
 
     def count(self) -> int:
         """顧客数を返す"""
-        return self.csv_handler.count()
+        return CustomerDB.query.count()
 
     def exists(self, customer_id: str) -> bool:
         """顧客が存在するかチェックする"""
-        return self.find_by_id(customer_id) is not None
+        return db.session.get(CustomerDB, customer_id) is not None
