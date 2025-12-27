@@ -17,6 +17,7 @@
 | `06_backend_agent.md` | **専門家**。基盤、DB、認証に特化したBackendテンプレート。 | ⭐️ |
 | `07_security_agent.md` | **番人**。監査、保護、脆弱性に特化したSecurityテンプレート。 | ⭐️ |
 | `08_frontend_agent.md` | **専門家**。UI、UX、画面設計に特化したFrontendテンプレート。 | ⭐️ |
+| `10_governance_rules.md` | **統治**。役割分離とManagerの監視義務。 | ⭐️⭐️⭐️ |
 
 ---
 
@@ -35,6 +36,9 @@
 
 ### 3. 自律的な状況報告 (Autonomous Reporting)
 各ドメインの専門家が自律的に進捗を更新。
+
+### 4. 役割の厳格分離 (Role Isolation)
+Managerエージェントは実作業を兼務せず、監視と指揮に専念する。AIエージェント特有の利益相反（自作自演）を排除。
 
 ---
 
