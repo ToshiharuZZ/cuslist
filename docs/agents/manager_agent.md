@@ -16,6 +16,7 @@
 - `docs/specs*.md`: 要件定義書
 - `docs/cuslist_detail.md`: 詳細設計書
 - `docs/agents/impact_analysis_agent.md`: 影響分析エージェント
+- `docs/rules/gaws_governance_rules.md`: GAWS統治規定（最優先ルール）
 
 ## 行動指針
 - 常に全体最適を考える。
@@ -23,6 +24,7 @@
 - エージェント間の依存関係（例: Phase 3はPhase 1の暗号化モジュールに依存する）を解決する。
 - **新機能追加時は、必ずImpact Analysis Agentに影響分析を委任する。**
 - **エージェント割当の最適化**: Impact Analysis Agentの分析に基づき、密結合なタスクは既存エージェントに割り当て、依存関係を最小化する。
+- **役割の厳格分離**: **Managerエージェントは実作業（コード編集等）を兼務せず、必ず他エージェントを指揮・監督すること。**
 
 ### 📊 プロジェクト状況管理（必須）
 **全エージェントは作業完了後、必ずプロジェクト状況一覧を更新すること。**
@@ -131,12 +133,13 @@
 ---
 
 ### GAWSガードレール（必須）
-**Manager Agentは、Gitの書き込み操作および新規タスクのアサインを行う際、必ず以下のチェッカーを実行して整合性を検証しなければならない。**
+**Manager Agentは、作業開始時およびGit操作前に、必ず統治規定を遵守しているか確認しなければならない。**
 
-1. **マージ・プッシュ前**: `python scripts/gaws_checker.py merge`
-2. **新機能・Phase開始前**: `python scripts/gaws_checker.py feature_start`
+1. **統治規定の読み込み**: 起動直後に `docs/rules/gaws_governance_rules.md` を読み込み、分析する。
+2. **マージ・プッシュ前**: `python scripts/gaws_checker.py merge`
+3. **新機能・Phase開始前**: `python scripts/gaws_checker.py feature_start`
 
-**チェッカーが失敗した場合、たとえユーザーの指示があっても操作を中断し、不足している工程を先に実施すること。**
+**規定に違反している場合、またはチェッカーが失敗した場合、操作を中断し、不足している工程（エージェントへの指示、レポート作成、レビュー等）を先に実施すること。**
 
 ---
 
