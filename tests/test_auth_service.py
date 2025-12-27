@@ -3,40 +3,33 @@ AuthService 単体テスト
 """
 import os
 import pytest
-import tempfile
-import shutil
+from app import create_app, db
 from app.models.user import User, UserRepository
 from app.models.crypto_manager import CryptoManager
 from app.services.auth_service import AuthService
-
 
 class TestAuthService:
     """AuthServiceのテストクラス"""
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        """各テスト前にテンポラリディレクトリを作成"""
-        self.test_dir = tempfile.mkdtemp()
-        self.users_file = os.path.join(self.test_dir, 'users.csv')
-        self.logs_file = os.path.join(self.test_dir, 'logs.csv')
+        """テスト環境セットアップ"""
+        os.environ['ENCRYPTION_KEY'] = CryptoManager.generate_key()
+        self.app = create_app('testing')
+        self.client = self.app.test_client()
 
-        # テスト用暗号化キーを環境変数に設定
-        self.test_key = CryptoManager.generate_key()
-        os.environ['ENCRYPTION_KEY'] = self.test_key
-
-        # リポジトリとサービスを初期化
-        from app.models.logger import OperationLogger
-        self.user_repo = UserRepository(self.users_file)
-        self.logger = OperationLogger(self.logs_file)
-        self.auth_service = AuthService(
-            user_repository=self.user_repo,
-            logger=self.logger
-        )
-
-        yield
-
-        # テスト後にクリーンアップ
-        shutil.rmtree(self.test_dir)
+        with self.app.app_context():
+            db.create_all()
+            from app.models.logger import OperationLogger
+            self.user_repo = UserRepository()
+            self.logger = OperationLogger()
+            self.auth_service = AuthService(
+                user_repository=self.user_repo,
+                logger=self.logger
+            )
+            yield
+            db.session.remove()
+            db.drop_all()
 
     def test_register_user(self):
         """利用者を登録できること"""
@@ -144,4 +137,3 @@ class TestAuthService:
 
         assert success is False
         assert '利用者IDは使用できません' in message
-

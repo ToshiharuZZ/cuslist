@@ -5,6 +5,7 @@ from typing import Optional, Tuple, List, Dict
 from datetime import datetime, date
 import calendar
 from app.models.user import User, UserRepository
+from app.models.logger import OperationLogger
 from app import db
 from app.models.db_models import PlanChangeHistory as PlanChangeHistoryDB
 

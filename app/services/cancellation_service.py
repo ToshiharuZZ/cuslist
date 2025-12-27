@@ -4,6 +4,8 @@ CancellationService: 解約管理サービス
 from typing import Optional, Tuple, List, Dict
 from datetime import datetime, date, timedelta
 from app.models.user import User, UserRepository
+from app.services.customer_service import CustomerService
+from app.models.logger import OperationLogger
 from app import db
 from app.models.db_models import CancellationHistory as CancellationHistoryDB
 

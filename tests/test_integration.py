@@ -3,56 +3,43 @@
 """
 import os
 import pytest
-import tempfile
-import shutil
-from app import create_app
+from app import create_app, db
 from app.models.logger import OperationLogger
 from app.services.billing_service import PlanLimits, BillingService
-from app.models.csv_handler import CsvHandler
 from app.models.crypto_manager import CryptoManager
 
 class TestIntegration:
     """統合テストシナリオ"""
 
     @pytest.fixture(autouse=True)
-    def setup(self, monkeypatch):
+    def setup(self):
         """テスト環境セットアップ"""
-        self.test_dir = tempfile.mkdtemp()
-        
-        # CsvHandlerのパス書き換え用モック
-        def mock_init(self_handler, file_path, fieldnames):
-             # 絶対パスでテストディレクトリ配下に強制変更
-             filename = os.path.basename(file_path)
-             self_handler.file_path = os.path.join(self.test_dir, filename)
-             self_handler.fieldnames = fieldnames
-             self_handler._ensure_file_exists()
-             
-        monkeypatch.setattr(CsvHandler, '__init__', mock_init)
-        
         # 環境変数を一時的に変更
         os.environ['ENCRYPTION_KEY'] = CryptoManager.generate_key()
         
-        # グローバル変数の汚染を防ぐため、モジュール変数を強制的に更新
-        # これにより前回のテストのパスを保持したインスタンスが使われるのを防ぐ
-        import app.views.auth
-        import app.views.customer
-        from app.services.auth_service import AuthService
-        from app.services.customer_service import CustomerService
-        from app.services.billing_service import BillingService
-
-        app.views.auth.auth_service = AuthService()
-        app.views.customer.customer_service = CustomerService()
-        app.views.customer.billing_service = BillingService()
-        
-        # Flaskアプリ設定（データディレクトリをテスト用に変更）
+        # Flaskアプリ設定（インメモリDBを使用）
         self.app = create_app('testing')
         self.app.config['WTF_CSRF_ENABLED'] = False
         self.client = self.app.test_client()
 
-        yield
-        
-        # クリーンアップ
-        shutil.rmtree(self.test_dir)
+        with self.app.app_context():
+            db.create_all()
+            
+            # グローバル変数の汚染を防ぐため、モジュール変数を強制的に更新
+            import app.views.auth
+            import app.views.customer
+            from app.services.auth_service import AuthService
+            from app.services.customer_service import CustomerService
+            from app.services.billing_service import BillingService
+
+            app.views.auth.auth_service = AuthService()
+            app.views.customer.customer_service = CustomerService()
+            app.views.customer.billing_service = BillingService()
+
+            yield
+            
+            db.session.remove()
+            db.drop_all()
 
     def test_scenario_full_flow(self):
         """
@@ -110,11 +97,14 @@ class TestIntegration:
         }, follow_redirects=True)
         assert b'Test Customer' in resp.data
         
-        # データが暗号化されているか確認
-        csv_path = os.path.join(self.test_dir, 'customers.csv')
-        with open(csv_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-            assert 'Test Customer' not in content
+        # データがデータベースに保存されており、かつ暗号化されているか確認
+        from app.models.db_models import Customer as CustomerDB
+        with self.app.app_context():
+            record = db.session.get(CustomerDB, 'CUS001')
+            assert record is not None
+            # 平文がDBに残っていないことを確認（暗号化の検証）
+            assert 'Test Customer' not in record.name_enc
+            assert 'Test Address' not in record.address_enc
 
     def test_scenario_plan_limit(self):
         """

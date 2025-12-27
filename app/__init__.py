@@ -37,12 +37,15 @@ def create_app(config_name: str = 'development') -> Flask:
     app.config['WTF_CSRF_ENABLED'] = True
 
     # データベース設定
-    data_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
+    if config_name == 'testing':
+        app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///:memory:"
+    else:
+        data_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        db_path = os.path.join(data_dir, 'database.db')
+        app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
     
-    db_path = os.path.join(data_dir, 'database.db')
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # 初期化

@@ -3,80 +3,78 @@ OperationLogger 単体テスト
 """
 import os
 import pytest
-import tempfile
-import shutil
+from app import create_app, db
 from app.models.logger import OperationLogger
-
 
 class TestOperationLogger:
     """OperationLoggerのテストクラス"""
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        """各テスト前にテンポラリディレクトリを作成"""
-        self.test_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.test_dir, 'logs.csv')
-        yield
-        # テスト後にクリーンアップ
-        shutil.rmtree(self.test_dir)
+        """テスト環境セットアップ"""
+        self.app = create_app('testing')
+        self.client = self.app.test_client()
+
+        with self.app.app_context():
+            db.create_all()
+            self.logger = OperationLogger()
+            yield
+            db.session.remove()
+            db.drop_all()
 
     def test_log_operation(self):
         """操作ログを記録できること"""
-        logger = OperationLogger(self.test_file)
+        with self.app.app_context():
+            log_id = self.logger.log(
+                user_id='USER001',
+                operation=OperationLogger.OP_CUSTOMER_CREATE,
+                target_id='CUS001',
+                details='新規顧客登録'
+            )
 
-        log_id = logger.log(
-            user_id='USER001',
-            operation=OperationLogger.OP_CUSTOMER_CREATE,
-            target_id='CUS001',
-            details='新規顧客登録'
-        )
+            assert log_id.startswith('LOG')
 
-        assert log_id.startswith('LOG')
-
-        logs = logger.csv_handler.read_all()
-        assert len(logs) == 1
-        assert logs[0]['user_id'] == 'USER001'
-        assert logs[0]['operation'] == 'customer_create'
+            logs = self.logger.get_logs_by_user('USER001')
+            assert len(logs) == 1
+            assert logs[0]['user_id'] == 'USER001'
+            assert logs[0]['operation'] == 'customer_create'
 
     def test_get_logs_by_user(self):
         """利用者IDでログを取得できること"""
-        logger = OperationLogger(self.test_file)
+        with self.app.app_context():
+            self.logger.log('USER001', OperationLogger.OP_LOGIN)
+            self.logger.log('USER002', OperationLogger.OP_LOGIN)
+            self.logger.log('USER001', OperationLogger.OP_CUSTOMER_CREATE, 'CUS001')
 
-        logger.log('USER001', OperationLogger.OP_LOGIN)
-        logger.log('USER002', OperationLogger.OP_LOGIN)
-        logger.log('USER001', OperationLogger.OP_CUSTOMER_CREATE, 'CUS001')
+            user1_logs = self.logger.get_logs_by_user('USER001')
+            assert len(user1_logs) == 2
 
-        user1_logs = logger.get_logs_by_user('USER001')
-        assert len(user1_logs) == 2
-
-        user2_logs = logger.get_logs_by_user('USER002')
-        assert len(user2_logs) == 1
+            user2_logs = self.logger.get_logs_by_user('USER002')
+            assert len(user2_logs) == 1
 
     def test_get_logs_by_operation(self):
         """操作種別でログを取得できること"""
-        logger = OperationLogger(self.test_file)
+        with self.app.app_context():
+            self.logger.log('USER001', OperationLogger.OP_LOGIN)
+            self.logger.log('USER001', OperationLogger.OP_CUSTOMER_CREATE, 'CUS001')
+            self.logger.log('USER001', OperationLogger.OP_CUSTOMER_CREATE, 'CUS002')
 
-        logger.log('USER001', OperationLogger.OP_LOGIN)
-        logger.log('USER001', OperationLogger.OP_CUSTOMER_CREATE, 'CUS001')
-        logger.log('USER001', OperationLogger.OP_CUSTOMER_CREATE, 'CUS002')
+            login_logs = self.logger.get_logs_by_operation(OperationLogger.OP_LOGIN)
+            assert len(login_logs) == 1
 
-        login_logs = logger.get_logs_by_operation(OperationLogger.OP_LOGIN)
-        assert len(login_logs) == 1
-
-        create_logs = logger.get_logs_by_operation(OperationLogger.OP_CUSTOMER_CREATE)
-        assert len(create_logs) == 2
+            create_logs = self.logger.get_logs_by_operation(OperationLogger.OP_CUSTOMER_CREATE)
+            assert len(create_logs) == 2
 
     def test_count_operations(self):
         """操作回数をカウントできること"""
-        logger = OperationLogger(self.test_file)
+        with self.app.app_context():
+            self.logger.log('USER001', OperationLogger.OP_CUSTOMER_SEARCH)
+            self.logger.log('USER001', OperationLogger.OP_CUSTOMER_SEARCH)
+            self.logger.log('USER001', OperationLogger.OP_CUSTOMER_SEARCH)
+            self.logger.log('USER002', OperationLogger.OP_CUSTOMER_SEARCH)
 
-        logger.log('USER001', OperationLogger.OP_CUSTOMER_SEARCH)
-        logger.log('USER001', OperationLogger.OP_CUSTOMER_SEARCH)
-        logger.log('USER001', OperationLogger.OP_CUSTOMER_SEARCH)
-        logger.log('USER002', OperationLogger.OP_CUSTOMER_SEARCH)
+            count = self.logger.count_operations('USER001', OperationLogger.OP_CUSTOMER_SEARCH)
+            assert count == 3
 
-        count = logger.count_operations('USER001', OperationLogger.OP_CUSTOMER_SEARCH)
-        assert count == 3
-
-        count_user2 = logger.count_operations('USER002', OperationLogger.OP_CUSTOMER_SEARCH)
-        assert count_user2 == 1
+            count_user2 = self.logger.count_operations('USER002', OperationLogger.OP_CUSTOMER_SEARCH)
+            assert count_user2 == 1

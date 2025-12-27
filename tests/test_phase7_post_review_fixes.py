@@ -1,6 +1,6 @@
 import pytest
 from flask.testing import FlaskCliRunner
-from app import create_app
+from app import create_app, db
 from app.models.user import User, UserRepository
 from app.services.cancellation_service import CancellationService
 from datetime import date, timedelta
@@ -15,13 +15,17 @@ def setup_encryption_key():
 def app():
     app = create_app('testing')
     app.config['TESTING'] = True
-    return app
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.session.remove()
+        db.drop_all()
 
 @pytest.fixture
 def runner(app):
     return app.test_cli_runner()
 
-def test_cleanup_accounts_command(app, runner, tmp_path):
+def test_cleanup_accounts_command(app, runner):
     """CLIコマンド cleanup-accounts が正常に動作することを検証"""
     with app.app_context():
         # 準備: 期限切れの解約ユーザーを作成

@@ -3,41 +3,34 @@ CustomerService 単体テスト
 """
 import os
 import pytest
-import tempfile
-import shutil
+from app import create_app, db
 from app.models.customer import Customer, CustomerRepository
 from app.models.crypto_manager import CryptoManager
 from app.services.customer_service import CustomerService
-
 
 class TestCustomerService:
     """CustomerServiceのテストクラス"""
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        """各テスト前にテンポラリディレクトリを作成"""
-        self.test_dir = tempfile.mkdtemp()
-        self.customers_file = os.path.join(self.test_dir, 'customers.csv')
-        self.logs_file = os.path.join(self.test_dir, 'logs.csv')
+        """テスト環境セットアップ"""
+        os.environ['ENCRYPTION_KEY'] = CryptoManager.generate_key()
+        self.app = create_app('testing')
+        self.client = self.app.test_client()
 
-        # テスト用暗号化キーを環境変数に設定
-        self.test_key = CryptoManager.generate_key()
-        os.environ['ENCRYPTION_KEY'] = self.test_key
-
-        # リポジトリとサービスを初期化
-        from app.models.logger import OperationLogger
-        self.crypto = CryptoManager()
-        self.customer_repo = CustomerRepository(self.customers_file, self.crypto)
-        self.logger = OperationLogger(self.logs_file)
-        self.customer_service = CustomerService(
-            customer_repository=self.customer_repo,
-            logger=self.logger
-        )
-
-        yield
-
-        # テスト後にクリーンアップ
-        shutil.rmtree(self.test_dir)
+        with self.app.app_context():
+            db.create_all()
+            self.crypto = CryptoManager()
+            self.customer_repo = CustomerRepository(crypto=self.crypto)
+            from app.models.logger import OperationLogger
+            self.logger = OperationLogger()
+            self.customer_service = CustomerService(
+                customer_repository=self.customer_repo,
+                logger=self.logger
+            )
+            yield
+            db.session.remove()
+            db.drop_all()
 
     def test_create_customer(self):
         """顧客を作成できること"""
@@ -182,12 +175,13 @@ class TestCustomerService:
             user_id='testuser'
         )
 
-        # CSVファイルを直接読み込み
-        with open(self.customers_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        # 平文データが含まれていないことを確認
-        assert '暗号化テスト' not in content
-        assert '秘密の住所' not in content
-        assert '090-0000-0000' not in content
-        assert 'secret@example.com' not in content
+        # DBレコードを直接確認
+        from app.models.db_models import Customer as CustomerDB
+        with self.app.app_context():
+            record = CustomerDB.query.filter_by(user_id='testuser').first()
+            assert record is not None
+            # 平文データが含まれていないことを確認
+            assert '暗号化テスト' not in record.name_enc
+            assert '秘密の住所' not in record.address_enc
+            assert '090-0000-0000' not in record.phone_enc
+            assert 'secret@example.com' not in record.email_enc

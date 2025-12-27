@@ -4,7 +4,6 @@ User: 利用者モデル
 """
 from typing import Optional, List, Dict
 from datetime import datetime
-from app.models.csv_handler import CsvHandler
 from app.models.crypto_manager import CryptoManager
 
 

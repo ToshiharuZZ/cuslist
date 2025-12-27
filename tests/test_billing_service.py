@@ -3,11 +3,9 @@ BillingService 単体テスト
 """
 import os
 import pytest
-import tempfile
-import shutil
+from app import create_app, db
 from app.models.crypto_manager import CryptoManager
 from app.services.billing_service import BillingService, PlanLimits
-
 
 class TestPlanLimits:
     """PlanLimitsのテストクラス"""
@@ -46,33 +44,26 @@ class TestPlanLimits:
         assert PlanLimits.is_subscription('usage') is False
         assert PlanLimits.is_subscription('transaction') is False
 
-
 class TestBillingService:
     """BillingServiceのテストクラス"""
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        """各テスト前にテンポラリディレクトリを作成"""
-        self.test_dir = tempfile.mkdtemp()
-        self.logs_file = os.path.join(self.test_dir, 'logs.csv')
-        self.billing_file = os.path.join(self.test_dir, 'billing.csv')
+        """テスト環境セットアップ"""
+        os.environ['ENCRYPTION_KEY'] = CryptoManager.generate_key()
+        self.app = create_app('testing')
+        self.client = self.app.test_client()
 
-        # テスト用暗号化キーを環境変数に設定
-        self.test_key = CryptoManager.generate_key()
-        os.environ['ENCRYPTION_KEY'] = self.test_key
-
-        # サービスを初期化
-        from app.models.logger import OperationLogger
-        self.logger = OperationLogger(self.logs_file)
-        self.billing_service = BillingService(
-            logger=self.logger,
-            billing_csv_path=self.billing_file
-        )
-
-        yield
-
-        # テスト後にクリーンアップ
-        shutil.rmtree(self.test_dir)
+        with self.app.app_context():
+            db.create_all()
+            from app.models.logger import OperationLogger
+            self.logger = OperationLogger()
+            self.billing_service = BillingService(
+                logger=self.logger
+            )
+            yield
+            db.session.remove()
+            db.drop_all()
 
     def test_check_customer_limit_within(self):
         """顧客登録件数が上限内の場合"""
@@ -135,20 +126,21 @@ class TestBillingService:
         """トランザクションプランの請求計算"""
         # 操作ログを追加
         from app.models.logger import OperationLogger
-        self.logger.log('testuser', OperationLogger.OP_CUSTOMER_CREATE, target_id='CUS001')
-        self.logger.log('testuser', OperationLogger.OP_CUSTOMER_CREATE, target_id='CUS002')
-        self.logger.log('testuser', OperationLogger.OP_CUSTOMER_UPDATE, target_id='CUS001')
-        self.logger.log('testuser', OperationLogger.OP_CUSTOMER_SEARCH, details='keyword=test')
+        with self.app.app_context():
+            self.logger.log('testuser', OperationLogger.OP_CUSTOMER_CREATE, target_id='CUS001')
+            self.logger.log('testuser', OperationLogger.OP_CUSTOMER_CREATE, target_id='CUS002')
+            self.logger.log('testuser', OperationLogger.OP_CUSTOMER_UPDATE, target_id='CUS001')
+            self.logger.log('testuser', OperationLogger.OP_CUSTOMER_SEARCH, details='keyword=test')
 
-        bill = self.billing_service.calculate_monthly_bill(
-            user_id='testuser',
-            plan='transaction',
-            billing_period='2025-12'
-        )
+            bill = self.billing_service.calculate_monthly_bill(
+                user_id='testuser',
+                plan='transaction',
+                billing_period='2025-12'
+            )
 
-        # 登録2件×¥10 + 編集1件×¥5 + 検索1回×¥1 = ¥26
-        assert bill['base_fee'] == 0
-        assert bill['total_fee'] == 26
+            # 登録2件×¥10 + 編集1件×¥5 + 検索1回×¥1 = ¥26
+            assert bill['base_fee'] == 0
+            assert bill['total_fee'] == 26
 
     def test_save_billing_record(self):
         """請求データを保存できること"""
@@ -162,11 +154,12 @@ class TestBillingService:
             'details': ['月額プラン料金: ¥500']
         }
 
-        billing_id = self.billing_service.save_billing_record(bill)
+        with self.app.app_context():
+            billing_id = self.billing_service.save_billing_record(bill)
 
-        assert billing_id.startswith('BILL')
+            assert billing_id.startswith('BILL')
 
-        # 履歴を確認
-        history = self.billing_service.get_billing_history('testuser')
-        assert len(history) == 1
-        assert history[0]['total_fee'] == '500'
+            # 履歴を確認
+            history = self.billing_service.get_billing_history('testuser')
+            assert len(history) == 1
+            assert history[0]['total_fee'] == 500.0

@@ -3,8 +3,11 @@ AnalysisService: データ解析サービス
 """
 import json
 import random
+from datetime import datetime
 from typing import Optional, List, Tuple
 from app.models.analysis_result import AnalysisResult
+from app.models.logger import OperationLogger
+from app.models.crypto_manager import CryptoManager
 from app import db
 from app.models.db_models import AnalysisResult as AnalysisResultDB
 
