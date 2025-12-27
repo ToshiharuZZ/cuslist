@@ -27,7 +27,7 @@ class User(db.Model):
 class Customer(db.Model):
     __tablename__ = 'customers'
     customer_id = db.Column(db.String(50), primary_key=True)
-    user_id = db.Column(db.String(50), db.ForeignKey('users.user_id'), nullable=False)
+    user_id = db.Column(db.String(50), db.ForeignKey('users.user_id'), nullable=False, index=True)
     name_enc = db.Column(db.Text)
     address_enc = db.Column(db.Text)
     phone_enc = db.Column(db.Text)
@@ -40,7 +40,7 @@ class Customer(db.Model):
 class AnalysisResult(db.Model):
     __tablename__ = 'analysis_results'
     result_id = db.Column(db.String(50), primary_key=True)
-    customer_id = db.Column(db.String(50), db.ForeignKey('customers.customer_id'), nullable=False)
+    customer_id = db.Column(db.String(50), db.ForeignKey('customers.customer_id'), nullable=False, index=True)
     analysis_date = db.Column(db.String(50), default=lambda: datetime.now().isoformat())
     accuracy_score = db.Column(db.Float, default=0.0)
     attribute_json_enc = db.Column(db.Text)
@@ -49,7 +49,7 @@ class AnalysisResult(db.Model):
 class Billing(db.Model):
     __tablename__ = 'billings'
     billing_id = db.Column(db.String(50), primary_key=True)
-    user_id = db.Column(db.String(50), db.ForeignKey('users.user_id'), nullable=False)
+    user_id = db.Column(db.String(50), db.ForeignKey('users.user_id'), nullable=False, index=True)
     billing_period = db.Column(db.String(7))  # YYYY-MM
     plan = db.Column(db.String(20))
     base_fee = db.Column(db.Float, default=0.0)
@@ -61,11 +61,11 @@ class Billing(db.Model):
 class OperationLog(db.Model):
     __tablename__ = 'operation_logs'
     log_id = db.Column(db.String(50), primary_key=True)
-    user_id = db.Column(db.String(50), db.ForeignKey('users.user_id'), nullable=False)
+    user_id = db.Column(db.String(50), db.ForeignKey('users.user_id'), nullable=False, index=True)
     operation = db.Column(db.String(50))
     target_id = db.Column(db.String(50))
     details = db.Column(db.Text)
-    created_at = db.Column(db.String(50), default=lambda: datetime.now().isoformat())
+    created_at = db.Column(db.String(50), default=lambda: datetime.now().isoformat(), index=True)
 
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
