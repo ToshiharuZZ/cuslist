@@ -18,6 +18,7 @@
 | `07_security_agent.md` | **番人**。監査、保護、脆弱性に特化したSecurityテンプレート。 | ⭐️ |
 | `08_frontend_agent.md` | **専門家**。UI、UX、画面設計に特化したFrontendテンプレート。 | ⭐️ |
 | `10_governance_rules.md` | **統治**。役割分離とManagerの監視義務。 | ⭐️⭐️⭐️ |
+| `11_test_specialist_agent.md` | **品質**。破壊的テスト、網羅性、パフォーマンステスト。 | ⭐️⭐️⭐️ |
 
 ---
 
@@ -51,6 +52,7 @@ GAWSのテンプレートは、単なるツールの集まりではなく、大�
 | :--- | :--- | :--- | :--- |
 | **戦略 & 指揮 (Strategy & Command)** | Manager, Impact Analysis | **「何を行うか(What)」** | 全体最適、リソース割当、アーキテクチャ上の整合性、統治規定の遵守。 |
 | **統治 & 防護 (Governance & Shield)** | Reviewer, Security | **「正しく行われているか(Right)」** | 品質・安全のゲートキーパー。コード品質、セキュリティ監査、コンプライアンス。 |
+| **検証 & 保証 (Verification & Validation)** | **Test Specialist** | **「期待通りか(Reliable)」** | 振る舞いの正確性、網羅性、パフォーマンス、統計的精度の立証。 |
 | **実行 & 実現 (Execution & Build)** | Backend, Frontend, Domain Specialists | **「どう実現するか(How)」** | ドメイン別の深い専門知識、実装効率、技術的整合性。 |
 
 ### 2. 権限と均衡 (Checks and Balances)
@@ -58,6 +60,7 @@ GAWSのテンプレートは、単なるツールの集まりではなく、大�
 AIエージェントによる「自作自演（利益相反）」を防ぐため、以下の均衡構造を組み込んでいます。
 
 - **Manager vs Expert**: Managerはコードを書かない（兼務禁止）。実装者が「早く終わらせたい」という圧力で品質を妥協するのを防ぐ。
+- **Expert vs Test Specialist**: 実装者は自らの正当性を主張するが、Test Specialistはそれを「破壊」しようと試みる。この対立関係が堅牢性を生む。
 - **Expert vs Reviewer**: 実装者は自ら承認できない。必ず第三者（Reviewer）がソースコードを静的・動的に検証する。
 - **Strategy vs Execution**: 新機能の開始（Strategy）は、常に影響分析（Impact Analysis）による「既存破壊のシミュレーション」を経てから実行レイヤーへ落ちる。
 

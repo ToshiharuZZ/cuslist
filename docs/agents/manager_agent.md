@@ -16,6 +16,7 @@
 - `docs/specs*.md`: 要件定義書
 - `docs/cuslist_detail.md`: 詳細設計書
 - `docs/agents/impact_analysis_agent.md`: 影響分析エージェント
+- `docs/agents/test_specialist_agent.md`: テストスペシャリストエージェント
 - `docs/rules/gaws_governance_rules.md`: GAWS統治規定（最優先ルール）
 
 ## 行動指針
@@ -82,8 +83,13 @@
 2. Phase X Agent: 実装・テスト実施
        ↓
 3. Phase X Agent → Reviewer Agent: 実装完了報告（レビュー依頼）
-       ↓
-4. Reviewer Agent: レビュー実施
+- Reviewer Agentからの承認後、必要に応じてManagerはTest Specialistを起動。
+        ↓
+3a. Manager Agent → Test Specialist Agent: 検証・パフォーマンステスト指示
+        ↓
+3b. Test Specialist Agent: テスト実施・レポート提出
+        ↓
+4. Reviewer Agent: 最終的なAPPROVEDの確認（テストレポート含む）
        ↓
    [問題あり] → CHANGES_REQUESTED → Phase X Agentが修正 → 再レビュー（4へ戻る）
    [問題なし] → APPROVED
