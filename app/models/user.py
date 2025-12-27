@@ -10,24 +10,7 @@ from app.models.crypto_manager import CryptoManager
 class User:
     """
     利用者を表すモデルクラス。
-    users.csv とマッピングし、認証・権限管理を行う。
     """
-
-    # users.csv のカラム定義
-    FIELDNAMES = [
-        'user_id',
-        'password_hash',
-        'role',
-        'plan',
-        'billing_type',
-        'balance_enc',
-        'status',                    # 新規: アカウント状態 (active/cancelled/suspended)
-        'cancellation_date',         # 新規: 解約予定日
-        'plan_change_count',         # 新規: 当月のプラン変更回数
-        'last_plan_change_date',     # 新規: 最終プラン変更日
-        'data_retention_until',      # 新規: データ保持期限
-        'created_at'
-    ]
 
     # 権限定数
     ROLE_ADMIN = 'admin'
@@ -57,30 +40,41 @@ class User:
         plan_change_count: int = 0,
         last_plan_change_date: str = '',
         data_retention_until: str = '',
-        created_at: Optional[str] = None
+        created_at: Optional[str] = None,
+        # 平文データ
+        balance: str = '0'
     ):
         self.user_id = user_id
         self.password_hash = password_hash
         self.role = role
         self.plan = plan
         self.billing_type = billing_type
-        self.balance_enc = balance_enc
+        self._balance_enc = balance_enc
         self.status = status
         self.cancellation_date = cancellation_date
         self.plan_change_count = int(plan_change_count)
         self.last_plan_change_date = last_plan_change_date
         self.data_retention_until = data_retention_until
         self.created_at = created_at or datetime.now().isoformat()
+        self._balance = balance
+
+    @property
+    def balance(self) -> str:
+        return self._balance
+
+    @balance.setter
+    def balance(self, value: str):
+        self._balance = value
 
     def to_dict(self) -> Dict[str, str]:
-        """辞書形式に変換"""
+        """プレーンな辞書形式に変換（アプリケーション内使用）"""
         return {
             'user_id': self.user_id,
             'password_hash': self.password_hash,
             'role': self.role,
             'plan': self.plan,
             'billing_type': self.billing_type,
-            'balance_enc': self.balance_enc,
+            'balance': self._balance,
             'status': self.status,
             'cancellation_date': self.cancellation_date,
             'plan_change_count': str(self.plan_change_count),
@@ -89,19 +83,37 @@ class User:
             'created_at': self.created_at
         }
 
+    def to_encrypted_dict(self, crypto: CryptoManager) -> Dict[str, str]:
+        """暗号化して辞書形式に変換（DB保存用）"""
+        return {
+            'user_id': self.user_id,
+            'password_hash': self.password_hash,
+            'role': self.role,
+            'plan': self.plan,
+            'billing_type': self.billing_type,
+            'balance_enc': crypto.encrypt(self._balance),
+            'status': self.status,
+            'cancellation_date': self.cancellation_date,
+            'plan_change_count': self.plan_change_count,
+            'last_plan_change_date': self.last_plan_change_date,
+            'data_retention_until': self.data_retention_until,
+            'created_at': self.created_at
+        }
+
     @classmethod
-    def from_dict(cls, data: Dict[str, str]) -> 'User':
-        """辞書からUserインスタンスを生成"""
+    def from_encrypted_dict(cls, data: Dict[str, str], crypto: CryptoManager) -> 'User':
+        """暗号化された辞書からUserインスタンスを生成（DB読み込み用）"""
         return cls(
             user_id=data.get('user_id', ''),
             password_hash=data.get('password_hash', ''),
             role=data.get('role', cls.ROLE_USER),
             plan=data.get('plan', cls.PLAN_BASIC),
             billing_type=data.get('billing_type', cls.BILLING_SUBSCRIPTION),
+            balance=crypto.decrypt(data.get('balance_enc', '')) if data.get('balance_enc') else '0',
             balance_enc=data.get('balance_enc', ''),
             status=data.get('status', 'active'),
             cancellation_date=data.get('cancellation_date', ''),
-            plan_change_count=data.get('plan_change_count', 0),
+            plan_change_count=int(data.get('plan_change_count', 0)),
             last_plan_change_date=data.get('last_plan_change_date', ''),
             data_retention_until=data.get('data_retention_until', ''),
             created_at=data.get('created_at')
@@ -121,9 +133,8 @@ class UserRepository:
     利用者データへのアクセスを管理するリポジトリクラス (SQLAlchemy版)。
     """
 
-    def __init__(self, **kwargs):
-        # 互換性のために引数は受け取るが使用しない
-        pass
+    def __init__(self, crypto: Optional[CryptoManager] = None, **kwargs):
+        self.crypto = crypto or CryptoManager()
 
     def find_by_id(self, user_id: str) -> Optional[User]:
         """
@@ -131,7 +142,7 @@ class UserRepository:
         """
         record = db.session.get(UserDB, user_id)
         if record:
-            return User.from_dict(record.to_dict())
+            return User.from_encrypted_dict(record.to_dict(), self.crypto)
         return None
 
     def find_all(self) -> List[User]:
@@ -139,18 +150,18 @@ class UserRepository:
         全利用者を取得する。
         """
         records = UserDB.query.all()
-        return [User.from_dict(r.to_dict()) for r in records]
+        return [User.from_encrypted_dict(r.to_dict(), self.crypto) for r in records]
 
     def save(self, user: User) -> None:
         """
         利用者を保存する。
         """
-        # すでに存在する場合はエラーを防ぐためチェック
         if self.find_by_id(user.user_id):
             self.update(user)
             return
 
-        record = UserDB(**user.to_dict())
+        encrypted_data = user.to_encrypted_dict(self.crypto)
+        record = UserDB(**encrypted_data)
         db.session.add(record)
         db.session.commit()
 
@@ -160,9 +171,8 @@ class UserRepository:
         """
         record = db.session.get(UserDB, user.user_id)
         if record:
-            # フィールドを更新
-            data = user.to_dict()
-            for key, value in data.items():
+            encrypted_data = user.to_encrypted_dict(self.crypto)
+            for key, value in encrypted_data.items():
                 if hasattr(record, key):
                     setattr(record, key, value)
             db.session.commit()

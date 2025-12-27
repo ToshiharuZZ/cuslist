@@ -137,3 +137,23 @@ class TestAuthService:
 
         assert success is False
         assert '利用者IDは使用できません' in message
+
+    def test_user_balance_encryption(self):
+        """ユーザー残高が暗号化されてDBに保存されることを検証"""
+        user_id = 'balance_test'
+        user = User(user_id=user_id, password_hash='hash', balance='5000')
+        
+        with self.app.app_context():
+            self.user_repo.save(user)
+            
+            # DBレコードを直接取得（透過復号を通さない）
+            from app.models.db_models import User as UserDB
+            record = db.session.get(UserDB, user_id)
+            
+            assert record.balance_enc != '5000' # 平文ではない
+            assert len(record.balance_enc) > 20 # 暗号化された長い文字列
+            
+            # リポジトリ経由で復号されることを確認
+            found_user = self.user_repo.find_by_id(user_id)
+            assert found_user.balance == '5000'
+
